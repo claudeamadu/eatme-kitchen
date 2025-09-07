@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, runTransaction, increment } from 'firebase/firestore';
 
 
 const MopedIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -33,7 +33,7 @@ const MopedIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const { items, total, clearCart } = useCart();
+    const { items, total, clearCart, appliedPoints } = useCart();
     const { user } = useOnboarding();
     const { toast } = useToast();
     const [paymentMethod, setPaymentMethod] = useState('mobile-money');
@@ -56,24 +56,35 @@ export default function CheckoutPage() {
 
         setIsProcessing(true);
         try {
-            const orderData = {
-                uid: user.uid,
-                items: items.map(item => ({
-                    id: item.id,
-                    name: item.name,
-                    quantity: item.quantity,
-                    price: item.price,
-                    imageUrl: item.imageUrl,
-                    imageHint: item.imageHint,
-                    extras: item.extras,
-                })),
-                total: finalTotal,
-                status: 'Ongoing',
-                createdAt: serverTimestamp(),
-            };
+            await runTransaction(db, async (transaction) => {
+                const loyaltyRef = doc(db, 'users', user.uid, 'loyalty', 'data');
+                
+                const orderData = {
+                    uid: user.uid,
+                    items: items.map(item => ({
+                        id: item.id,
+                        name: item.name,
+                        quantity: item.quantity,
+                        price: item.price,
+                        imageUrl: item.imageUrl,
+                        imageHint: item.imageHint,
+                        extras: item.extras,
+                    })),
+                    total: finalTotal,
+                    status: 'Ongoing',
+                    createdAt: serverTimestamp(),
+                };
 
-            const ordersCollectionRef = collection(db, 'orders');
-            await addDoc(ordersCollectionRef, orderData);
+                const ordersCollectionRef = collection(db, 'orders');
+                transaction.set(addDoc(ordersCollectionRef), orderData);
+
+                // Update loyalty points
+                const pointsEarned = Math.floor(finalTotal / 10); // Example: 1 point per 10 GHC spent
+                transaction.set(loyaltyRef, { 
+                    points: increment(pointsEarned - appliedPoints),
+                    orders: increment(1) 
+                }, { merge: true });
+            });
             
             setIsModalOpen(true);
         } catch (error: any) {

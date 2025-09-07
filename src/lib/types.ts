@@ -71,3 +71,10 @@ export interface wallet {
   logo: string;
   logoHint: string;
 }
+
+export interface LoyaltyData {
+  points: number;
+  referrals: number;
+  reviews: number;
+  orders: number;
+}

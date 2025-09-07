@@ -13,12 +13,15 @@ import { CartItemCard } from '@/components/cart-item-card';
 
 export default function CartPage() {
   const router = useRouter();
-  const { items, subtotal, total, loyaltyPoints } = useCart();
+  const { items, subtotal, total, loyaltyPoints, availablePoints, applyLoyaltyPoints, appliedAmount } = useCart();
   const [loyaltyInput, setLoyaltyInput] = useState('');
 
   const handleApplyLoyalty = () => {
-    // In a real app, you'd validate and apply points
-    console.log('Applying loyalty points:', loyaltyInput);
+    const pointsToApply = parseInt(loyaltyInput, 10);
+    if (!isNaN(pointsToApply) && pointsToApply > 0) {
+      applyLoyaltyPoints(pointsToApply);
+      setLoyaltyInput('');
+    }
   };
 
   if (items.length === 0) {
@@ -63,8 +66,9 @@ export default function CartPage() {
         <Card className="max-w-md mx-auto p-4 rounded-2xl shadow-xl bg-card/95 backdrop-blur-sm">
            <div className="flex justify-between items-center gap-2 mb-4">
             <Input 
-                placeholder="Loyalty Points" 
+                placeholder={`Use points (max ${availablePoints})`} 
                 className="bg-background rounded-full"
+                type="number"
                 value={loyaltyInput}
                 onChange={(e) => setLoyaltyInput(e.target.value)}
             />
@@ -77,8 +81,8 @@ export default function CartPage() {
               <span>GHC {subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
-              <span>Loyalty Points</span>
-              <span className="text-destructive">- GHC {loyaltyPoints.toFixed(2)}</span>
+              <span>Loyalty Discount</span>
+              <span className="text-destructive">- GHC {appliedAmount.toFixed(2)}</span>
             </div>
             <div className="h-px bg-border my-2"></div>
             <div className="flex justify-between font-bold text-lg text-foreground">

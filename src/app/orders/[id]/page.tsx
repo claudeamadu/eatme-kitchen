@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, runTransaction, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { order, cart_item } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
+import { useOnboarding } from '@/hooks/use-onboarding';
 
 const statusColors: { [key: string]: string } = {
   Ongoing: 'text-orange-500 bg-orange-100',
@@ -50,6 +51,7 @@ const StarRating = ({ rating, setRating }: { rating: number, setRating: (rating:
 export default function OrderDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const { user } = useOnboarding();
   const { id } = params;
   const { toast } = useToast();
 
@@ -58,6 +60,7 @@ export default function OrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isRatingSheetOpen, setIsRatingSheetOpen] = useState(false);
   const [ratings, setRatings] = useState<Record<string, number>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (typeof id !== 'string') {
@@ -97,14 +100,38 @@ export default function OrderDetailPage() {
     setRatings(prev => ({ ...prev, [itemId]: rating }));
   };
 
-  const submitRatings = () => {
-    console.log('Submitting ratings:', ratings);
-    // For now, we just close the sheet and show a toast
-    setIsRatingSheetOpen(false);
-    toast({
-        title: "Ratings Submitted",
-        description: "Thank you for your feedback!",
-    });
+  const submitRatings = async () => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Not authenticated' });
+        return;
+    }
+    setIsSubmitting(true);
+    try {
+        const loyaltyRef = doc(db, 'users', user.uid, 'loyalty', 'data');
+        const ratedItemsCount = Object.values(ratings).filter(r => r > 0).length;
+
+        if (ratedItemsCount > 0) {
+             await runTransaction(db, async (transaction) => {
+                const pointsPerReview = 5;
+                const totalPoints = ratedItemsCount * pointsPerReview;
+                transaction.set(loyaltyRef, { 
+                    points: increment(totalPoints),
+                    reviews: increment(ratedItemsCount)
+                }, { merge: true });
+             });
+        }
+        
+        setIsRatingSheetOpen(false);
+        toast({
+            title: "Ratings Submitted",
+            description: `Thank you for your feedback! You've earned ${ratedItemsCount * 5} points.`,
+        });
+    } catch(err) {
+        console.error("Failed to submit ratings", err);
+        toast({ variant: 'destructive', title: 'Submission Failed', description: 'Could not submit your ratings.' });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -131,7 +158,7 @@ export default function OrderDetailPage() {
   const orderPrice = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const loyaltyPoints = 40.00; // Mock data
   const deliveryFee = 20.00; // Mock data
-  const total = orderPrice - loyaltyPoints + deliveryFee;
+  const total = order.total;
 
   return (
     <div className="food-pattern min-h-screen pb-40">
@@ -186,9 +213,6 @@ export default function OrderDetailPage() {
         
         <Card className="rounded-2xl shadow-lg">
             <CardContent className="p-6 divide-y">
-                <DetailRow label="Order Price" value={`GHC ${orderPrice.toFixed(2)}`} />
-                <DetailRow label="Loyalty Points" value={`GHC -${loyaltyPoints.toFixed(2)}`} valueClass="text-destructive" />
-                <DetailRow label="Delivery Fee" value={`GHC ${deliveryFee.toFixed(2)}`} />
                 <DetailRow label="Total" value={`GHC ${total.toFixed(2)}`} valueClass="text-xl font-bold text-foreground" />
             </CardContent>
         </Card>
@@ -231,8 +255,9 @@ export default function OrderDetailPage() {
              ))}
           </div>
           <SheetFooter className="mt-6">
-            <Button size="lg" className="w-full rounded-full bg-red-600 hover:bg-red-700 text-white" onClick={submitRatings}>
-                Submit Ratings
+            <Button size="lg" className="w-full rounded-full bg-red-600 hover:bg-red-700 text-white" onClick={submitRatings} disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Submitting...' : 'Submit Ratings'}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -240,5 +265,3 @@ export default function OrderDetailPage() {
     </div>
   );
 }
-
-    

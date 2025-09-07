@@ -1,9 +1,12 @@
 
 'use client';
 
-import { useState, useEffect, createContext, useContext, ReactNode, useMemo } from 'react';
-import type { cart_item } from '@/lib/types';
+import { useState, useEffect, createContext, useContext, ReactNode, useMemo, useCallback } from 'react';
+import type { cart_item, LoyaltyData } from '@/lib/types';
 import { useToast } from './use-toast';
+import { useOnboarding } from './use-onboarding';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface CartContextType {
   items: cart_item[];
@@ -12,19 +15,26 @@ interface CartContextType {
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
   subtotal: number;
-  loyaltyPoints: number;
   total: number;
   isLoaded: boolean;
+  availablePoints: number;
+  appliedPoints: number;
+  appliedAmount: number;
+  applyLoyaltyPoints: (points: number) => void;
 }
 
 const CART_KEY = 'eatme-cart';
+const POINTS_TO_GHC = 0.5; // 1 point = 0.5 GHC
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<cart_item[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [availablePoints, setAvailablePoints] = useState(0);
+  const [appliedPoints, setAppliedPoints] = useState(0);
   const { toast } = useToast();
+  const { user } = useOnboarding();
 
   useEffect(() => {
     let storedCart: string | null = null;
@@ -35,7 +45,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error('Failed to parse cart from localStorage', error);
-      // In case of error, cart remains empty
       setItems([]);
     }
     setIsLoaded(true);
@@ -50,6 +59,23 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
     }
   }, [items, isLoaded]);
+
+   useEffect(() => {
+    if (user) {
+      const loyaltyRef = doc(db, 'users', user.uid, 'loyalty', 'data');
+      const unsubscribe = onSnapshot(loyaltyRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const loyaltyData = docSnap.data() as LoyaltyData;
+          setAvailablePoints(loyaltyData.points || 0);
+        } else {
+          setAvailablePoints(0);
+        }
+      });
+      return () => unsubscribe();
+    } else {
+      setAvailablePoints(0);
+    }
+  }, [user]);
 
   const addToCart = (itemToAdd: Omit<cart_item, 'quantity'> & { quantity?: number }) => {
     const quantityToAdd = itemToAdd.quantity || 1;
@@ -84,15 +110,34 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const clearCart = () => {
     setItems([]);
+    setAppliedPoints(0);
   };
 
   const subtotal = useMemo(() => {
     return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [items]);
   
-  // Hardcoded loyalty points for now
-  const loyaltyPoints = subtotal > 0 ? 20 : 0; 
-  const total = useMemo(() => Math.max(0, subtotal - loyaltyPoints), [subtotal, loyaltyPoints]);
+  const appliedAmount = useMemo(() => appliedPoints * POINTS_TO_GHC, [appliedPoints]);
+  const total = useMemo(() => Math.max(0, subtotal - appliedAmount), [subtotal, appliedAmount]);
+
+  const applyLoyaltyPoints = useCallback((pointsToApply: number) => {
+    if (pointsToApply > availablePoints) {
+        toast({ variant: 'destructive', title: 'Not enough points', description: `You only have ${availablePoints} points.` });
+        return;
+    }
+    
+    const maxApplicableAmount = subtotal;
+    const maxApplicablePoints = Math.ceil(maxApplicableAmount / POINTS_TO_GHC);
+    const points = Math.min(pointsToApply, maxApplicablePoints);
+
+    setAppliedPoints(points);
+    toast({ title: 'Points Applied', description: `${points} points have been applied to your order.` });
+  }, [availablePoints, subtotal, toast]);
+
+  useEffect(() => {
+    // Reset applied points if cart changes
+    setAppliedPoints(0);
+  }, [items]);
 
   const value = {
     items,
@@ -101,9 +146,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     updateQuantity,
     clearCart,
     subtotal,
-    loyaltyPoints,
     total,
     isLoaded,
+    availablePoints,
+    appliedPoints,
+    appliedAmount,
+    applyLoyaltyPoints,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
