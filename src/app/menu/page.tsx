@@ -1,24 +1,17 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { foodItems } from '@/lib/food';
-import type { food_item } from '@/lib/types';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import type { food_item, category } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Bell, Search, ShoppingCart, Plus } from 'lucide-react';
+import { Bell, Search, ShoppingCart, Plus, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-
-const categories = [
-    { name: 'All', image: ''},
-    { name: 'Assorted', image: 'https://picsum.photos/100/100?random=10' },
-    { name: 'Sea Food', image: 'https://picsum.photos/100/100?random=11' },
-    { name: 'Fried Rice', image: 'https://picsum.photos/100/100?random=12' },
-    { name: 'Jollof', image: 'https://picsum.photos/100/100?random=13' },
-];
 
 const MenuItemCard = ({ item }: { item: food_item }) => {
     const href = item.slug === 'assorted-jollof'
@@ -51,7 +44,36 @@ const MenuItemCard = ({ item }: { item: food_item }) => {
 
 
 export default function MenuPage() {
-    const [activeCategory, setActiveCategory] = useState('Assorted');
+    const [activeCategory, setActiveCategory] = useState('All');
+    const [foodItems, setFoodItems] = useState<food_item[]>([]);
+    const [categories, setCategories] = useState<category[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        const foodQuery = query(collection(db, 'foodItems'), where('isDeleted', '!=', true));
+        const unsubFood = onSnapshot(foodQuery, (snapshot) => {
+            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as food_item));
+            setFoodItems(items);
+            setIsLoading(false);
+        });
+
+        const unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
+            const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as category));
+            setCategories([{id: 'all', name: 'All', image: ''}, ...cats]);
+        });
+
+        return () => {
+            unsubFood();
+            unsubCategories();
+        };
+    }, []);
+
+    const filteredFoodItems = foodItems.filter(item => {
+        const matchesCategory = activeCategory === 'All' || item.cuisine === activeCategory;
+        const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesCategory && matchesSearch;
+    });
     
     return (
         <div className="food-pattern min-h-screen">
@@ -74,7 +96,7 @@ export default function MenuPage() {
                 </div>
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input placeholder="search food, eg. kanzo" className="pl-10 rounded-full bg-card" />
+                    <Input placeholder="search food, eg. kanzo" className="pl-10 rounded-full bg-card" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
             </header>
             
@@ -82,7 +104,7 @@ export default function MenuPage() {
                 <h2 className="text-xl font-bold font-headline container mx-auto px-4 mb-2">Category</h2>
                  <div className="flex overflow-x-auto space-x-3 px-4 pb-2 -mx-4">
                     {categories.map((category) => (
-                        <button key={category.name} onClick={() => setActiveCategory(category.name)}
+                        <button key={category.id} onClick={() => setActiveCategory(category.name)}
                             className={cn("flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full transition-colors",
                                 activeCategory === category.name ? 'bg-destructive text-destructive-foreground' : 'bg-card'
                             )}
@@ -97,11 +119,21 @@ export default function MenuPage() {
             </section>
 
             <main className="container mx-auto px-4 pb-24">
-                <div className="space-y-4">
-                    {foodItems.map(item => (
-                       <MenuItemCard key={item.id} item={item} />
-                    ))}
-                </div>
+                {isLoading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {filteredFoodItems.length > 0 ? (
+                            filteredFoodItems.map(item => (
+                                <MenuItemCard key={item.id} item={item} />
+                            ))
+                        ) : (
+                            <p className="text-center text-muted-foreground py-8">No food items found.</p>
+                        )}
+                    </div>
+                )}
             </main>
         </div>
     );

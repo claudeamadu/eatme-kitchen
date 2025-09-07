@@ -11,7 +11,14 @@ export type food_item = {
   cuisine: string;
   dietary: string[];
   price: number;
+  isDeleted?: boolean;
 };
+
+export interface category {
+    id: string;
+    name: string;
+    image: string;
+}
 
 export interface cart_item {
   id: string;

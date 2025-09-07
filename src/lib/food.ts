@@ -1,5 +1,8 @@
+
 import type { food_item } from './types';
 
+// This file is now deprecated as food items are fetched from Firestore.
+// It is kept for reference and to avoid breaking imports in pages that haven't been updated yet.
 export const foodItems: food_item[] = [
   {
     id: '1',
