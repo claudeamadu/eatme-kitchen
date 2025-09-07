@@ -7,11 +7,9 @@ import Image from 'next/image';
 import { notFound, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, Flame, Leaf, Minus, Plus, Soup, UtensilsCrossed } from 'lucide-react';
+import { ChevronLeft, Flame, Leaf, Minus, Plus, Soup, Star, Clock } from 'lucide-react';
 import { FavoritesButton } from '@/components/favorites-button';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 export default function FoodPage({ params }: { params: { slug: string } }) {
   const router = useRouter();
@@ -22,7 +20,6 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
     notFound();
   }
   
-  // The 'assorted-jollof' slug has its own custom page, so we shouldn't render it here.
   if (recipe.slug === 'assorted-jollof') {
     notFound();
   }
@@ -57,32 +54,23 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
       <div className="relative pt-[40vh]">
         <div className="bg-background rounded-t-3xl p-6 pb-32">
           <h1 className="text-3xl font-bold font-headline">{recipe.title}</h1>
+           <div className="flex items-center gap-4 text-muted-foreground my-3">
+            <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                <span className="font-bold text-foreground">4.8</span>
+                <span className="text-sm">(50+ reviews)</span>
+            </div>
+            <div className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm">15-25 mins</span>
+            </div>
+          </div>
           <p className="text-muted-foreground text-base my-4">{recipe.description}</p>
           
-           <Card className="bg-card">
-                <CardHeader>
-                    <CardTitle className="text-xl font-headline">Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm">
-                    <div className="flex items-center gap-2">
-                        <UtensilsCrossed className="h-5 w-5 text-accent"/>
-                        <span className="font-semibold">Cuisine:</span>
-                        <span>{recipe.cuisine}</span>
-                    </div>
-                     <Separator/>
-                    <div className="flex flex-wrap gap-2">
-                        {recipe.dietary.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
-                    </div>
-                     <Separator/>
-                    <CardTitle className="text-lg font-headline pt-2">Nutritional Info</CardTitle>
-                     <div className="space-y-2">
-                        <div className="flex justify-between"><span><Flame className="inline h-4 w-4 mr-1"/>Calories:</span> <span>{recipe.nutrition.calories}</span></div>
-                        <div className="flex justify-between"><span><Soup className="inline h-4 w-4 mr-1"/>Protein:</span> <span>{recipe.nutrition.protein}</span></div>
-                        <div className="flex justify-between"><span><Leaf className="inline h-4 w-4 mr-1"/>Carbs:</span> <span>{recipe.nutrition.carbs}</span></div>
-                        <div className="flex justify-between"><span>Fat:</span> <span>{recipe.nutrition.fat}</span></div>
-                     </div>
-                </CardContent>
-            </Card>
+            <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary">{recipe.cuisine}</Badge>
+                {recipe.dietary.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+            </div>
         </div>
       </div>
 
@@ -108,3 +96,4 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
     </div>
   );
 }
+
