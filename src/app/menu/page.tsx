@@ -19,26 +19,35 @@ const categories = [
     { name: 'Jollof', image: 'https://picsum.photos/100/100?random=13' },
 ];
 
-const MenuItemCard = ({ recipe }: { recipe: Recipe }) => (
-    <div className="bg-card p-4 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
-        <Image
-            src={recipe.imageUrl}
-            alt={recipe.title}
-            width={100}
-            height={100}
-            className="rounded-xl object-cover w-24 h-24"
-            data-ai-hint={recipe.imageHint}
-        />
-        <div className="flex-grow">
-            <h3 className="font-bold font-headline text-lg">{recipe.title}</h3>
-            <p className="text-muted-foreground text-sm line-clamp-2">{recipe.description}</p>
-            <p className="text-destructive font-bold text-base my-2">GHC {recipe.nutrition.calories.split(' ')[0]}</p>
-        </div>
-        <Button size="icon" variant="outline" className="rounded-full h-9 w-9 border-destructive text-destructive hover:bg-destructive/10">
-            <Plus className="h-5 w-5" />
-        </Button>
-    </div>
-);
+const MenuItemCard = ({ recipe }: { recipe: Recipe }) => {
+    // Special handling for Assorted Jollof to go to its custom page
+    const href = recipe.slug === 'assorted-jollof'
+      ? `/recipes/assorted-jollof`
+      : `/recipes/${recipe.slug}`;
+
+    return (
+        <Link href={href}>
+            <div className="bg-card p-4 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+                <Image
+                    src={recipe.imageUrl}
+                    alt={recipe.title}
+                    width={100}
+                    height={100}
+                    className="rounded-xl object-cover w-24 h-24"
+                    data-ai-hint={recipe.imageHint}
+                />
+                <div className="flex-grow">
+                    <h3 className="font-bold font-headline text-lg">{recipe.title}</h3>
+                    <p className="text-muted-foreground text-sm line-clamp-2">{recipe.description}</p>
+                    <p className="text-destructive font-bold text-base my-2">GHC {recipe.nutrition.calories.split(' ')[0]}</p>
+                </div>
+                <Button size="icon" variant="outline" className="rounded-full h-9 w-9 border-destructive text-destructive hover:bg-destructive/10">
+                    <Plus className="h-5 w-5" />
+                </Button>
+            </div>
+        </Link>
+    );
+};
 
 
 export default function MenuPage() {
