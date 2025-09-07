@@ -4,6 +4,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { usePathname } from 'next/navigation';
 import OnboardingPage from '@/app/onboarding/page';
 import BottomNav from '@/components/layout/bottom-nav';
+import { cn } from '@/lib/utils';
 
 const ONBOARDING_KEY = 'eatme-onboarding-complete';
 
@@ -17,11 +18,14 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(undef
 function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup');
+  const isRecipePage = pathname.startsWith('/recipes');
+
+  const showBottomNav = !isAuthPage && !isRecipePage;
 
   return (
     <div className="relative flex min-h-screen flex-col">
-      <main className="flex-1 pb-20">{children}</main>
-      {!isAuthPage && <BottomNav />}
+      <main className={cn("flex-1", showBottomNav && "pb-20")}>{children}</main>
+      {showBottomNav && <BottomNav />}
     </div>
   );
 }
