@@ -11,7 +11,7 @@ import Link from 'next/link';
 const menuItems = [
     { label: 'My Profile', icon: User, href: '/settings/profile' },
     { label: 'Payment Methods', icon: CreditCard, href: '/settings/payment-methods' },
-    { label: 'Loyalty Rewards', icon: Gift, href: '#' },
+    { label: 'Loyalty Rewards', icon: Gift, href: '/settings/loyalty-rewards' },
     { label: 'Help Center', icon: ShieldQuestion, href: '/settings/help-center' },
     { label: 'Logout', icon: LogOut, className: 'text-destructive', action: 'logout' },
 ];
