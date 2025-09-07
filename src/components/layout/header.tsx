@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ChefHat, Heart } from 'lucide-react';
+import { ChefHat, Heart, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function Header() {
@@ -27,6 +27,12 @@ export default function Header() {
             <Button variant="ghost" size="icon">
               <Heart className="h-5 w-5" />
               <span className="sr-only">Favorites</span>
+            </Button>
+          </Link>
+          <Link href="/login" passHref>
+            <Button>
+              <LogIn className="h-5 w-5 mr-2" />
+              Login
             </Button>
           </Link>
         </div>

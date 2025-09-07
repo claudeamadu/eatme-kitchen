@@ -3,6 +3,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import OnboardingPage from '@/app/onboarding/page';
+import Header from '@/components/layout/header'; // Corrected import
 
 const ONBOARDING_KEY = 'eatme-onboarding-complete';
 
@@ -12,6 +13,18 @@ interface OnboardingContextType {
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
+
+function AppLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup');
+
+  return (
+    <div className="relative flex min-h-screen flex-col">
+      {!isAuthPage && <Header />}
+      <main className="flex-1">{children}</main>
+    </div>
+  );
+}
 
 export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true);
@@ -38,11 +51,15 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const showOnboarding = isLoaded && !hasCompletedOnboarding && pathname !== '/onboarding';
+  const showOnboarding = isLoaded && !hasCompletedOnboarding && pathname !== '/onboarding' && !pathname.startsWith('/login') && !pathname.startsWith('/signup');
+
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup');
 
   return (
     <OnboardingContext.Provider value={{ hasCompletedOnboarding, completeOnboarding }}>
-      {showOnboarding ? <OnboardingPage /> : children}
+      {showOnboarding ? <OnboardingPage /> : (
+        isAuthPage ? children : <AppLayout>{children}</AppLayout>
+      )}
     </OnboardingContext.Provider>
   );
 };
