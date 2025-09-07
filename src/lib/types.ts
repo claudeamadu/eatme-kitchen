@@ -1,3 +1,4 @@
+
 export type food_item = {
   id: string;
   slug: string;
@@ -60,4 +61,13 @@ export interface promo_card_props {
   imageHint: string;
   imagePosition: 'left' | 'right';
   href: string;
+}
+
+export interface wallet {
+  id: string;
+  name: string;
+  network: string;
+  number: string;
+  logo: string;
+  logoHint: string;
 }
