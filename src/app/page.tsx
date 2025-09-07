@@ -11,9 +11,31 @@ import Link from 'next/link';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { DailySpecialCard } from '@/components/daily-special-card';
 import { PopularDishCard } from '@/components/popular-dish-card';
+import { PromoCard } from '@/components/promo-card';
 
 const dailySpecials = recipes.slice(0, 3);
 const popularDishes = recipes.slice(0, 2);
+
+const promos = [
+  {
+    title: "Mama's Lunch Special",
+    description: "Make Mama feel special with our special Mama's Lunch!",
+    buttonText: "Order Now!",
+    imageUrl: "https://picsum.photos/300/300?random=60",
+    imageHint: "mother daughter eating",
+    imagePosition: 'right' as 'right',
+    href: '/menu'
+  },
+  {
+    title: "30% Off Loyalty Offer",
+    description: "Enjoy a whooping 30% off your next 2 orders as part of our loyalty program.",
+    buttonText: "Order Now!",
+    imageUrl: "https://picsum.photos/300/300?random=61",
+    imageHint: "plate of noodles",
+    imagePosition: 'right' as 'right',
+    href: '/menu'
+  }
+];
 
 export default function HomePage() {
   return (
@@ -39,6 +61,18 @@ export default function HomePage() {
           </div>
         </div>
       </header>
+
+      <section className="mb-8">
+         <Carousel opts={{ loop: true, align: 'start' }} className="w-full">
+           <CarouselContent className="-ml-4">
+             {promos.map((promo, index) => (
+              <CarouselItem key={index} className="pl-4 basis-full md:basis-1/2 lg:basis-2/3">
+                <PromoCard {...promo} />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
+      </section>
 
       <section className="mb-8">
         <h2 className="text-xl font-bold font-headline container mx-auto px-4 mb-3">Daily Specials</h2>
