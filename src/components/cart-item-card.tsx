@@ -4,10 +4,11 @@ import Image from 'next/image';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Minus, Plus, Trash2, Pencil } from 'lucide-react';
-import { useCart, type CartItem } from '@/hooks/use-cart';
+import { useCart } from '@/hooks/use-cart';
+import type { cart_item } from '@/lib/types';
 
 interface CartItemCardProps {
-  item: CartItem;
+  item: cart_item;
 }
 
 export function CartItemCard({ item }: CartItemCardProps) {

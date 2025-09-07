@@ -1,20 +1,11 @@
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useMemo } from 'react';
-
-export interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  imageUrl: string;
-  imageHint?: string;
-  extras?: string;
-}
+import type { cart_item } from '@/lib/types';
 
 interface CartContextType {
-  items: CartItem[];
-  addToCart: (item: Omit<CartItem, 'quantity'>) => void;
+  items: cart_item[];
+  addToCart: (item: Omit<cart_item, 'quantity'>) => void;
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -26,7 +17,7 @@ interface CartContextType {
 
 const CART_KEY = 'eatme-cart';
 
-const mockCartItems: CartItem[] = [
+const mockCartItems: cart_item[] = [
     {
         id: '4-medium-tilapia',
         name: 'Assorted Jollof',
@@ -51,7 +42,7 @@ const mockCartItems: CartItem[] = [
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<cart_item[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -79,7 +70,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [items, isLoaded]);
 
-  const addToCart = (itemToAdd: Omit<CartItem, 'quantity'>) => {
+  const addToCart = (itemToAdd: Omit<cart_item, 'quantity'>) => {
     setItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.id === itemToAdd.id);
       if (existingItem) {

@@ -3,7 +3,7 @@
 
 import { Bell, Search, ShoppingCart, Plus, ArrowRight, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { recipes, type Recipe } from '@/lib/recipes';
+import { recipes } from '@/lib/recipes';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,11 +12,12 @@ import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carouse
 import { DailySpecialCard } from '@/components/daily-special-card';
 import { PopularDishCard } from '@/components/popular-dish-card';
 import { PromoCard } from '@/components/promo-card';
+import type { promo_card_props } from '@/lib/types';
 
 const dailySpecials = recipes.slice(0, 3);
 const popularDishes = recipes.slice(0, 2);
 
-const promos = [
+const promos: promo_card_props[] = [
   {
     title: "Mama's Lunch Special",
     description: "Make Mama feel special with our special Mama's Lunch!",

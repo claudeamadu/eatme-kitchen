@@ -1,4 +1,4 @@
-import type { Recipe } from '@/lib/recipes';
+import type { recipe } from '@/lib/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
@@ -7,7 +7,7 @@ import { Heart } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface DailySpecialCardProps {
-  recipe: Recipe;
+  recipe: recipe;
 }
 
 export function DailySpecialCard({ recipe }: DailySpecialCardProps) {

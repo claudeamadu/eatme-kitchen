@@ -4,18 +4,9 @@ import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import type { promo_card_props } from '@/lib/types';
 
-interface PromoCardProps {
-  title: string;
-  description: string;
-  buttonText: string;
-  imageUrl: string;
-  imageHint: string;
-  imagePosition: 'left' | 'right';
-  href: string;
-}
-
-export function PromoCard({ title, description, buttonText, imageUrl, imageHint, imagePosition, href }: PromoCardProps) {
+export function PromoCard({ title, description, buttonText, imageUrl, imageHint, imagePosition, href }: promo_card_props) {
   return (
     <Card className="shadow-lg rounded-2xl overflow-hidden">
       <CardContent className={cn("p-6 flex items-center justify-between gap-4", imagePosition === 'left' ? 'flex-row-reverse' : '')}>

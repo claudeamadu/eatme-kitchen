@@ -1,7 +1,7 @@
 'use client';
 
 import { useFavorites } from '@/hooks/use-favorites';
-import { recipes, type Recipe } from '@/lib/recipes';
+import { recipes } from '@/lib/recipes';
 import { RecipeCard } from '@/components/recipe-card';
 import { Heart } from 'lucide-react';
 import Link from 'next/link';

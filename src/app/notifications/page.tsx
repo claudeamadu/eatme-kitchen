@@ -7,27 +7,9 @@ import { ChevronLeft, Bell, XCircle, CheckCircle, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import type { notification, grouped_notifications, notification_type } from '@/lib/types';
 
-type NotificationType = 'success' | 'error' | 'info' | 'update';
-
-interface Notification {
-  id: string;
-  type: NotificationType;
-  title: string;
-  description: string;
-  time: string;
-  isRead: boolean;
-  link?: {
-    href: string;
-    text: string;
-  };
-}
-
-interface GroupedNotifications {
-  [group: string]: Notification[];
-}
-
-const notifications: Notification[] = [
+const notifications: notification[] = [
   {
     id: '1',
     type: 'success',
@@ -71,20 +53,20 @@ const notifications: Notification[] = [
   }
 ];
 
-const groupedNotifications: GroupedNotifications = {
+const groupedNotifications: grouped_notifications = {
   "Today": notifications.slice(0, 2),
   "Yesterday": notifications.slice(2, 3),
   "21/11/2024": notifications.slice(3, 5)
 };
 
-const notificationIcons: Record<NotificationType, React.ElementType> = {
+const notificationIcons: Record<notification_type, React.ElementType> = {
   success: CheckCircle,
   error: XCircle,
   info: Info,
   update: Bell,
 };
 
-const notificationColors: Record<NotificationType, string> = {
+const notificationColors: Record<notification_type, string> = {
   success: 'text-green-500',
   error: 'text-red-500',
   info: 'text-blue-500',

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import type { Recipe } from '@/lib/recipes';
+import type { recipe } from '@/lib/types';
 import { RecipeCard } from './recipe-card';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search } from 'lucide-react';
 
 interface RecipeGridProps {
-  allRecipes: Recipe[];
+  allRecipes: recipe[];
 }
 
 export function RecipeGrid({ allRecipes }: RecipeGridProps) {

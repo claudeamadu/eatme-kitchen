@@ -3,7 +3,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { recipes, type Recipe } from '@/lib/recipes';
+import { recipes } from '@/lib/recipes';
+import type { recipe } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Bell, Search, ShoppingCart, Plus } from 'lucide-react';
@@ -19,7 +20,7 @@ const categories = [
     { name: 'Jollof', image: 'https://picsum.photos/100/100?random=13' },
 ];
 
-const MenuItemCard = ({ recipe }: { recipe: Recipe }) => {
+const MenuItemCard = ({ recipe }: { recipe: recipe }) => {
     const href = recipe.slug === 'assorted-jollof'
       ? `/food/assorted-jollof`
       : `/food/${recipe.slug}`;

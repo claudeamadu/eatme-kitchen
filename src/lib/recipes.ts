@@ -1,23 +1,6 @@
-export type Recipe = {
-  id: string;
-  slug: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  imageHint: string;
-  cuisine: string;
-  dietary: string[];
-  ingredients: string[];
-  instructions: string[];
-  nutrition: {
-    calories: string;
-    protein: string;
-    carbs: string;
-    fat: string;
-  };
-};
+import type { recipe } from './types';
 
-export const recipes: Recipe[] = [
+export const recipes: recipe[] = [
   {
     id: '1',
     slug: 'spaghetti-carbonara',

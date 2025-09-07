@@ -1,4 +1,4 @@
-import type { Recipe } from '@/lib/recipes';
+import type { recipe } from '@/lib/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +7,7 @@ import { FavoritesButton } from './favorites-button';
 import { UtensilsCrossed } from 'lucide-react';
 
 interface RecipeCardProps {
-  recipe: Recipe;
+  recipe: recipe;
 }
 
 export function RecipeCard({ recipe }: RecipeCardProps) {

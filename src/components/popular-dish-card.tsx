@@ -1,11 +1,11 @@
-import type { Recipe } from '@/lib/recipes';
+import type { recipe } from '@/lib/types';
 import Image from 'next/image';
 import { Button } from './ui/button';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 
 interface PopularDishCardProps {
-  recipe: Recipe;
+  recipe: recipe;
 }
 
 export function PopularDishCard({ recipe }: PopularDishCardProps) {

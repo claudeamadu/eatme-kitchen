@@ -8,13 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Bell, MoreVertical, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import type { order, order_status } from '@/lib/types';
 
-type OrderStatus = 'Ongoing' | 'Completed' | 'Cancelled';
 
-const orders = [
+const orders: order[] = [
   {
     id: '210043',
-    status: 'Ongoing' as OrderStatus,
+    status: 'Ongoing' as order_status,
     items: [
       { name: 'Assorted Noodles', image: 'https://picsum.photos/100/100?random=1', hint: 'noodles' },
     ],
@@ -22,7 +22,7 @@ const orders = [
   },
   {
     id: '210025',
-    status: 'Completed' as OrderStatus,
+    status: 'Completed' as order_status,
     items: [
       { name: 'Steamed Vegetable Rice', image: 'https://picsum.photos/100/100?random=2', hint: 'vegetable rice' },
       { name: 'Assorted Noodles', image: 'https://picsum.photos/100/100?random=3', hint: 'noodles' },
@@ -32,7 +32,7 @@ const orders = [
   },
   {
     id: '210003',
-    status: 'Cancelled' as OrderStatus,
+    status: 'Cancelled' as order_status,
     items: [
         { name: 'Yam Chips', image: 'https://picsum.photos/100/100?random=5', hint: 'yam chips' }
     ],
@@ -40,7 +40,7 @@ const orders = [
   },
    {
     id: '210123',
-    status: 'Completed' as OrderStatus,
+    status: 'Completed' as order_status,
     items: [
         { name: 'Yam Chips', image: 'https://picsum.photos/100/100?random=6', hint: 'yam chips' },
         { name: 'Assorted Noodles', image: 'https://picsum.photos/100/100?random=7', hint: 'noodles' },
@@ -49,7 +49,7 @@ const orders = [
   },
 ];
 
-const statusColors: { [key in OrderStatus]: string } = {
+const statusColors: { [key in order_status]: string } = {
   Ongoing: 'text-orange-500 bg-orange-100',
   Completed: 'text-green-600 bg-green-100',
   Cancelled: 'text-red-600 bg-red-100',
