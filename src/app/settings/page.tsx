@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -7,6 +8,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ChevronRight, CreditCard, Gift, LogOut, ShieldQuestion, User } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import Link from 'next/link';
+import { useOnboarding } from '@/hooks/use-onboarding';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 const menuItems = [
     { label: 'My Profile', icon: User, href: '/settings/profile' },
@@ -18,12 +24,41 @@ const menuItems = [
 
 export default function SettingsPage() {
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+    const { user } = useOnboarding();
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            toast({
+                title: 'Logged Out',
+                description: 'You have been successfully logged out.',
+            });
+            // The auth listener in OnboardingProvider will handle the redirect.
+        } catch (error) {
+            console.error("Logout failed", error);
+            toast({
+                variant: 'destructive',
+                title: 'Logout Failed',
+                description: 'An error occurred while logging out. Please try again.',
+            });
+        } finally {
+            setIsLogoutModalOpen(false);
+        }
+    };
+
 
     const handleMenuItemClick = (action?: string) => {
         if (action === 'logout') {
             setIsLogoutModalOpen(true);
         }
     };
+
+    const getInitials = (name: string | null | undefined) => {
+        if (!name) return 'U';
+        return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    }
 
     return (
         <div className="food-pattern min-h-screen">
@@ -34,12 +69,12 @@ export default function SettingsPage() {
             <main className="container mx-auto px-4">
                 <Card className="p-6 flex items-center gap-4 mb-8 shadow-lg bg-card">
                     <Avatar className="h-20 w-20 border-4 border-background">
-                        <AvatarImage src="https://i.pravatar.cc/150?u=sylvia" alt="Sylvia" />
-                        <AvatarFallback>S</AvatarFallback>
+                        <AvatarImage src={user?.photoURL || `https://i.pravatar.cc/150?u=${user?.email}`} alt={user?.displayName || 'User'} />
+                        <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-grow">
-                        <h1 className="text-2xl font-bold">Sylvia</h1>
-                        <p className="text-muted-foreground">sylvia@example.com</p>
+                        <h1 className="text-2xl font-bold">{user?.displayName || 'Welcome!'}</h1>
+                        <p className="text-muted-foreground">{user?.email}</p>
                     </div>
                 </Card>
 
@@ -85,8 +120,8 @@ export default function SettingsPage() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex-col-reverse gap-2 sm:flex-row">
-                        <AlertDialogCancel className="w-full rounded-full">Cancel</AlertDialogCancel>
-                        <AlertDialogAction className="w-full rounded-full bg-destructive hover:bg-destructive/90">Logout</AlertDialogAction>
+                        <AlertDialogCancel className="w-full rounded-full" onClick={() => setIsLogoutModalOpen(false)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction className="w-full rounded-full bg-destructive hover:bg-destructive/90" onClick={handleLogout}>Logout</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

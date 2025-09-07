@@ -12,6 +12,7 @@ import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carouse
 import { PromoCard } from '@/components/promo-card';
 import type { promo_card_props } from '@/lib/types';
 import { PopularDishCard } from '@/components/popular-dish-card';
+import { useOnboarding } from '@/hooks/use-onboarding';
 
 const popularDishes = foodItems.slice(0, 2);
 
@@ -37,12 +38,15 @@ const promos: promo_card_props[] = [
 ];
 
 export default function HomePage() {
+  const { user } = useOnboarding();
+  const displayName = user?.displayName?.split(' ')[0] || 'there';
+
   return (
     <div className="food-pattern min-h-screen">
       <header className="container mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-2">
           <div>
-            <h1 className="text-3xl font-headline font-bold">Good Afternoon! Sylvia</h1>
+            <h1 className="text-3xl font-headline font-bold">Good Afternoon! {displayName}</h1>
             <p className="text-muted-foreground">We hope you're in a good mood to dine.</p>
           </div>
           <div className="flex items-center gap-2">

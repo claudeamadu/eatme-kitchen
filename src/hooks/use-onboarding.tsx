@@ -2,12 +2,15 @@
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import OnboardingPage from '@/app/onboarding/page';
 import BottomNav from '@/components/layout/bottom-nav';
 import { cn } from '@/lib/utils';
 import { CartProvider } from './use-cart';
 import SplashScreen from '@/app/splash/page';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { Loader2 } from 'lucide-react';
 
 const ONBOARDING_KEY = 'eatme-onboarding-complete';
 const SPLASH_KEY = 'eatme-splash-shown';
@@ -15,6 +18,7 @@ const SPLASH_KEY = 'eatme-splash-shown';
 interface OnboardingContextType {
   hasCompletedOnboarding: boolean;
   completeOnboarding: () => void;
+  user: User | null;
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -39,7 +43,10 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [splashShown, setSplashShown] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     try {
@@ -51,10 +58,19 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
 
     } catch (error) {
       console.error('Failed to read from storage', error);
-      setHasCompletedOnboarding(false);
-      setSplashShown(true); // Don't show splash/onboarding on error
+      // Fallback safely
+      setHasCompletedOnboarding(true); 
+      setSplashShown(true);
     }
     setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoaded(true);
+    });
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -80,17 +96,58 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const showSplash = isLoaded && !splashShown;
-  const showOnboarding = isLoaded && splashShown && !hasCompletedOnboarding && pathname !== '/onboarding' && !pathname.startsWith('/login') && !pathname.startsWith('/signup');
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup');
-
-  const value = { hasCompletedOnboarding, completeOnboarding };
-
+  const value = { hasCompletedOnboarding, completeOnboarding, user };
+  
   const renderContent = () => {
-    if (showSplash) return <SplashScreen />;
-    if (showOnboarding) return <OnboardingPage />;
-    if (isAuthPage) return <>{children}</>;
-    return <AppLayout>{children}</AppLayout>;
+    // 1. Show Splash if not shown yet or if auth/storage is not loaded
+    if (!isLoaded || !splashShown) {
+      return <SplashScreen />;
+    }
+
+    // After splash, wait for auth to be loaded
+    if (!authLoaded) {
+       return (
+        <div className="fixed inset-0 bg-background flex items-center justify-center">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </div>
+       )
+    }
+
+    // 2. If auth is loaded and user is logged in
+    if (user) {
+        // If user is logged in but trying to access auth pages, redirect to home
+        if (pathname.startsWith('/login') || pathname.startsWith('/signup')) {
+            router.replace('/');
+            return <AppLayout><div /></AppLayout>; // Render empty while redirecting
+        }
+        return <AppLayout>{children}</AppLayout>;
+    }
+    
+    // 3. If auth is loaded but no user (logged out)
+    if (!user) {
+        // If onboarding is not complete, show it
+        if (!hasCompletedOnboarding) {
+            return <OnboardingPage />;
+        }
+        // If onboarding is complete, but user is trying to access other pages, redirect to login
+        if (!pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
+             router.replace('/login');
+             return (
+                <div className="fixed inset-0 bg-background flex items-center justify-center">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                </div>
+            );
+        }
+        // Allow access to login/signup pages
+        return <>{children}</>;
+    }
+    
+    // Fallback loading state
+    return (
+        <div className="fixed inset-0 bg-background flex items-center justify-center">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </div>
+    );
   }
 
   return (

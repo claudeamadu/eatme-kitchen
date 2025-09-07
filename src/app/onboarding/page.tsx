@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -42,13 +43,13 @@ export default function OnboardingPage() {
     if (step < onboardingSteps.length - 1) {
       setStep(step + 1);
     } else {
-      handleSkip();
+      finishOnboarding();
     }
   };
 
-  const handleSkip = () => {
+  const finishOnboarding = () => {
     completeOnboarding();
-    router.push('/');
+    router.push('/login');
   };
 
   const currentStep = onboardingSteps[step];
@@ -74,7 +75,7 @@ export default function OnboardingPage() {
         </motion.div>
       </AnimatePresence>
       <div className="absolute top-4 right-4 z-20">
-        <Button onClick={handleSkip} variant="ghost" className="bg-white/80 hover:bg-white text-foreground rounded-full">
+        <Button onClick={finishOnboarding} variant="ghost" className="bg-white/80 hover:bg-white text-foreground rounded-full">
           Skip
         </Button>
       </div>
@@ -109,7 +110,7 @@ export default function OnboardingPage() {
             ))}
           </div>
           <Button onClick={handleNext} size="lg" className="w-full rounded-full bg-red-600 hover:bg-red-700 text-white">
-            {step === onboardingSteps.length - 1 ? "Let's Go!" : 'Next'}
+            {step === onboardingSteps.length - 1 ? "Get Started" : 'Next'}
           </Button>
         </div>
       </div>
