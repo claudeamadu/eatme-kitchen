@@ -39,7 +39,6 @@ export default function SignupPage() {
             uid: user.uid,
             displayName: name,
             email: email,
-            createdAt: new Date(),
         });
       }
 
