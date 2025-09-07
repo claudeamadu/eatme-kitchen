@@ -26,45 +26,47 @@ const OrderCard = ({ order }: { order: order }) => {
   const totalItems = order.items.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <Card className="shadow-lg">
-      <CardHeader className="flex flex-row justify-between items-start pb-2">
-        <div>
-          <p className="text-sm text-muted-foreground">Order No. {order.id.slice(0,6)}</p>
-        </div>
-        <div className="flex items-center gap-4">
-            <Badge className={cn("px-2 py-1 text-xs font-bold rounded-full border-none", statusColors[order.status])}>
-                {order.status}
-            </Badge>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-5 w-5" />
-            </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <h3 className="text-xl font-bold font-headline">
-          {order.items[0].name}
-          {totalItems > 1 && (
-            <span className="text-sm font-normal text-muted-foreground ml-2">
-              + {totalItems - 1} other{totalItems > 2 ? 's' : ''}
-            </span>
-          )}
-        </h3>
-        <p className="text-lg font-bold text-destructive my-2">GHC {order.total.toFixed(2)}</p>
-        <div className="flex items-center gap-2">
-          {displayItems.map((item, index) => (
-            <Image
-              key={index}
-              src={item.imageUrl}
-              alt={item.name}
-              width={64}
-              height={64}
-              className="rounded-lg object-cover w-16 h-16"
-              data-ai-hint={item.imageHint}
-            />
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <Link href={`/orders/${order.id}`} passHref>
+        <Card className="shadow-lg">
+          <CardHeader className="flex flex-row justify-between items-start pb-2">
+            <div>
+              <p className="text-sm text-muted-foreground">Order No. {order.id.slice(0,6)}</p>
+            </div>
+            <div className="flex items-center gap-4">
+                <Badge className={cn("px-2 py-1 text-xs font-bold rounded-full border-none", statusColors[order.status])}>
+                    {order.status}
+                </Badge>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-5 w-5" />
+                </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <h3 className="text-xl font-bold font-headline">
+              {order.items[0].name}
+              {totalItems > 1 && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  + {totalItems - 1} other{totalItems > 2 ? 's' : ''}
+                </span>
+              )}
+            </h3>
+            <p className="text-lg font-bold text-destructive my-2">GHC {order.total.toFixed(2)}</p>
+            <div className="flex items-center gap-2">
+              {displayItems.map((item, index) => (
+                <Image
+                  key={index}
+                  src={item.imageUrl}
+                  alt={item.name}
+                  width={64}
+                  height={64}
+                  className="rounded-lg object-cover w-16 h-16"
+                  data-ai-hint={item.imageHint}
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+    </Link>
   );
 };
 
