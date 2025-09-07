@@ -25,11 +25,8 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(undef
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isFoodPage = pathname.startsWith('/food');
-  const isCartPage = pathname === '/cart';
-  const isCheckoutPage = pathname === '/checkout';
-
-  const showBottomNav = !isCartPage && !isCheckoutPage;
+  const pagesWithBottomNav = ['/', '/menu', '/orders', '/settings'];
+  const showBottomNav = pagesWithBottomNav.includes(pathname);
 
   return (
     <div className="relative flex min-h-screen flex-col">
