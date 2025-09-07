@@ -20,11 +20,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup');
   const isRecipePage = pathname.startsWith('/recipes');
 
-  const showBottomNav = !isAuthPage && !isRecipePage;
+  const showBottomNav = !isAuthPage;
 
   return (
     <div className="relative flex min-h-screen flex-col">
-      <main className={cn("flex-1", showBottomNav && "pb-20")}>{children}</main>
+      <main className={cn("flex-1", !isRecipePage && "pb-20")}>{children}</main>
       {showBottomNav && <BottomNav />}
     </div>
   );
@@ -81,3 +81,5 @@ export const useOnboarding = (): OnboardingContextType => {
   }
   return context;
 };
+
+    

@@ -8,7 +8,7 @@ import { notFound, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, ChefHat, ChevronLeft, Clock, Heart, Minus, Plus, ShoppingCart, Star } from 'lucide-react';
+import { ChevronLeft, Clock, Minus, Plus, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FavoritesButton } from '@/components/favorites-button';
 
@@ -29,7 +29,7 @@ export default function AssortedJollofPage() {
   const recipe = recipes.find(r => r.slug === 'assorted-jollof');
   
   const [selectedSize, setSelectedSize] = useState('medium');
-  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [selectedExtras, setSelectedExtras] = useState<string[]>(['tilapia']);
   const [quantity, setQuantity] = useState(1);
 
   if (!recipe) {
@@ -54,7 +54,7 @@ export default function AssortedJollofPage() {
   };
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen food-pattern">
       <div className="absolute top-0 left-0 right-0 h-[45vh]">
         <Image
           src={recipe.imageUrl}
@@ -63,11 +63,11 @@ export default function AssortedJollofPage() {
           className="object-cover"
           data-ai-hint={recipe.imageHint}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
       </div>
       
       <div className="absolute top-5 left-4 z-10">
-        <Button size="icon" variant="ghost" className="rounded-full bg-white/80 hover:bg-white" onClick={() => router.back()}>
+        <Button size="icon" variant="ghost" className="rounded-full bg-white/80 hover:bg-white backdrop-blur-sm" onClick={() => router.back()}>
           <ChevronLeft className="h-6 w-6" />
         </Button>
       </div>
@@ -76,18 +76,18 @@ export default function AssortedJollofPage() {
          <FavoritesButton recipeId={recipe.id} recipeTitle={recipe.title} />
       </div>
 
-      <div className="relative pt-[40vh] food-pattern">
+      <div className="relative pt-[40vh]">
         <div className="bg-background rounded-t-3xl p-6 pb-32">
           <h1 className="text-3xl font-bold font-headline">{recipe.title}</h1>
           <div className="flex items-center gap-4 text-muted-foreground my-3">
             <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                <span className="font-bold">4.5</span>
-                <span>(30 reviews)</span>
+                <span className="font-bold text-foreground">4.5</span>
+                <span className="text-sm">(30 reviews)</span>
             </div>
             <div className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
-                <span>10-20 mins</span>
+                <span className="text-sm">10-20 mins</span>
             </div>
           </div>
           <p className="text-muted-foreground text-base mb-6">{recipe.description}</p>
@@ -99,8 +99,9 @@ export default function AssortedJollofPage() {
                 <div key={size.id}>
                   <RadioGroupItem value={size.id} id={size.id} className="peer sr-only" />
                   <Label htmlFor={size.id} className={cn(
-                    "flex flex-col items-center justify-center rounded-lg p-3 border-2 border-muted bg-popover hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground [&:has([data-state=checked])]:bg-primary",
-                    selectedSize === size.id ? "bg-red-600 border-red-600 text-white" : "bg-card"
+                    "flex flex-col items-center justify-center rounded-xl p-3 border-2 border-transparent transition-all",
+                    "peer-data-[state=unchecked]:bg-card peer-data-[state=unchecked]:shadow-sm",
+                    "peer-data-[state=checked]:bg-destructive peer-data-[state=checked]:text-destructive-foreground"
                   )}>
                     <span className="font-bold">{size.name}</span>
                     <span className="text-sm">GHC {size.price}</span>
@@ -115,20 +116,20 @@ export default function AssortedJollofPage() {
             <div className="grid grid-cols-3 gap-3">
               {extras.map(extra => (
                 <div key={extra.id} onClick={() => handleExtraToggle(extra.id)}
-                  className={cn("rounded-lg border-2 p-2 text-center cursor-pointer",
-                    selectedExtras.includes(extra.id) ? 'border-primary bg-primary/10' : 'border-muted bg-card'
+                  className={cn("rounded-xl border-2 p-2 text-center cursor-pointer transition-all",
+                    selectedExtras.includes(extra.id) ? 'border-destructive bg-destructive/10' : 'border-transparent bg-card shadow-sm'
                   )}
                 >
                   <div className="relative">
                     <Image src={extra.image} alt={extra.name} width={80} height={80} data-ai-hint={extra.hint} className="w-full h-20 object-cover rounded-md mb-2"/>
-                    <div className={cn("absolute top-1 right-1 h-5 w-5 rounded-full border-2 bg-card flex items-center justify-center",
-                        selectedExtras.includes(extra.id) ? 'border-primary' : 'border-muted-foreground/50'
+                    <div className={cn("absolute top-2 right-2 h-5 w-5 rounded-full border-2 bg-card flex items-center justify-center",
+                        selectedExtras.includes(extra.id) ? 'border-destructive' : 'border-muted-foreground/30'
                     )}>
-                        {selectedExtras.includes(extra.id) && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
+                        {selectedExtras.includes(extra.id) && <div className="h-2.5 w-2.5 rounded-full bg-destructive" />}
                     </div>
                   </div>
                   <p className="font-semibold text-sm">{extra.name}</p>
-                   <p className={cn("font-bold text-xs", selectedExtras.includes(extra.id) ? "text-primary": "text-destructive")}>GHC {extra.price}</p>
+                   <p className={cn("font-bold text-xs", selectedExtras.includes(extra.id) ? "text-destructive": "text-muted-foreground")}>GHC {extra.price}</p>
                 </div>
               ))}
             </div>
@@ -136,18 +137,18 @@ export default function AssortedJollofPage() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm p-4 border-t">
-        <div className="container mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 rounded-full bg-card p-1">
-             <Button size="icon" variant="ghost" className="rounded-full" onClick={() => setQuantity(q => Math.max(1, q-1))}>
+      <div className="fixed bottom-0 left-0 right-0 bg-transparent p-4">
+        <div className="container mx-auto flex items-center justify-between gap-2 max-w-md">
+          <div className="flex items-center gap-2 rounded-full bg-destructive/90 p-1 text-destructive-foreground backdrop-blur-sm">
+             <Button size="icon" variant="ghost" className="rounded-full hover:bg-destructive-foreground/20" onClick={() => setQuantity(q => Math.max(1, q-1))}>
                 <Minus className="h-5 w-5" />
              </Button>
              <span className="font-bold text-lg w-5 text-center">{quantity}</span>
-             <Button size="icon" variant="ghost" className="rounded-full" onClick={() => setQuantity(q => q+1)}>
+             <Button size="icon" variant="ghost" className="rounded-full hover:bg-destructive-foreground/20" onClick={() => setQuantity(q => q+1)}>
                 <Plus className="h-5 w-5" />
              </Button>
           </div>
-          <Button size="lg" className="flex-grow rounded-full bg-red-600 hover:bg-red-700 text-white">
+          <Button size="lg" className="flex-grow rounded-full bg-destructive/90 backdrop-blur-sm text-destructive-foreground hover:bg-destructive">
             <div className="flex justify-between w-full items-center">
                 <span>Add to cart</span>
                 <span>GHC {calculateTotal().toFixed(2)}</span>
@@ -159,3 +160,4 @@ export default function AssortedJollofPage() {
   );
 }
 
+    
