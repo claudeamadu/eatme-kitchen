@@ -6,6 +6,7 @@ import { RecipeCard } from './recipe-card';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Search } from 'lucide-react';
 
 interface RecipeGridProps {
   allRecipes: Recipe[];
@@ -31,14 +32,17 @@ export function RecipeGrid({ allRecipes }: RecipeGridProps) {
 
   return (
     <div>
-      <div className="mb-8 p-6 bg-card rounded-lg shadow-sm">
+      <div className="mb-8 p-6 bg-card rounded-2xl shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input
-            placeholder="Search by recipe or ingredient..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="md:col-span-3 lg:col-span-1"
-          />
+          <div className="relative md:col-span-3 lg:col-span-1">
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+             <Input
+                placeholder="Search by recipe or ingredient..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+          </div>
           <Select value={cuisineFilter} onValueChange={setCuisineFilter}>
             <SelectTrigger>
               <SelectValue placeholder="Filter by cuisine" />
