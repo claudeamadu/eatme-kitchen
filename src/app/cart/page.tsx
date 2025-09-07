@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -85,9 +86,11 @@ export default function CartPage() {
               <span>GHC {total.toFixed(2)}</span>
             </div>
           </div>
-          <Button size="lg" className="w-full mt-4 rounded-full">
-            Proceed to Checkout
-          </Button>
+          <Link href="/checkout" passHref className="block mt-4">
+            <Button size="lg" className="w-full rounded-full">
+              Proceed to Checkout
+            </Button>
+          </Link>
         </Card>
       </div>
     </div>
