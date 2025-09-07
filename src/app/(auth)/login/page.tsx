@@ -28,23 +28,31 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Check if user document exists, if not, create it
-      const userDocRef = doc(db, "users", user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-
-      if (!userDocSnap.exists()) {
-        await setDoc(userDocRef, {
-            uid: user.uid,
-            displayName: user.displayName,
-            email: user.email,
+      if (user.email?.endsWith('@eatmekitchen.org')) {
+        toast({
+          title: 'Admin Login Successful',
+          description: "Welcome to the admin panel!",
         });
-      }
+        router.push('/admin');
+      } else {
+        // Check if user document exists, if not, create it
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
 
-      toast({
-        title: 'Login Successful',
-        description: "Welcome back!",
-      });
-      router.push('/');
+        if (!userDocSnap.exists()) {
+          await setDoc(userDocRef, {
+              uid: user.uid,
+              displayName: user.displayName,
+              email: user.email,
+          });
+        }
+
+        toast({
+          title: 'Login Successful',
+          description: "Welcome back!",
+        });
+        router.push('/');
+      }
     } catch (error: any) {
       toast({
         variant: 'destructive',
