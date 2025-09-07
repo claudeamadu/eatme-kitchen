@@ -54,7 +54,9 @@ export default function HomePage() {
         <Card className="p-4 flex items-center justify-between gap-4 bg-card shadow-lg rounded-2xl">
           <div className="flex-1">
             <h3 className="font-bold font-headline text-lg">Celebrating a special occasion or event?</h3>
-            <Button className="mt-2 rounded-full bg-red-600 hover:bg-red-700 text-white">Reserve your table now!</Button>
+            <Link href="/reservation" passHref>
+              <Button className="mt-2 rounded-full bg-red-600 hover:bg-red-700 text-white">Reserve your table now!</Button>
+            </Link>
           </div>
           <Image src="https://picsum.photos/100/100?random=30" alt="Reservation" width={80} height={80} data-ai-hint="waiter serving food" className="w-20 h-20" />
         </Card>
