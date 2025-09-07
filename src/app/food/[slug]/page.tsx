@@ -31,6 +31,7 @@ const extras = [
 
 
 export default function FoodPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
   const router = useRouter();
   const { addToCart } = useCart();
   const [item, setItem] = useState<food_item | null>(null);
@@ -44,12 +45,12 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
   const isCustomizable = item?.slug === 'assorted-jollof';
 
   useEffect(() => {
-    if (!params.slug) return;
+    if (!slug) return;
 
     const fetchItem = async () => {
       setIsLoading(true);
       try {
-        const q = query(collection(db, "foodItems"), where("slug", "==", params.slug), where("isDeleted", "!=", true));
+        const q = query(collection(db, "foodItems"), where("slug", "==", slug), where("isDeleted", "!=", true));
         const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) {
           setItem(null);
@@ -66,7 +67,7 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
     };
     
     fetchItem();
-  }, [params.slug]);
+  }, [slug]);
 
 
   if (isLoading) {
