@@ -10,7 +10,8 @@ import { ChevronLeft, Edit2, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { updateProfile } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
@@ -26,8 +27,16 @@ export default function ProfilePage() {
     useEffect(() => {
         if (user) {
             setUsername(user.displayName || '');
-            // You might need a custom claim or firestore doc for phone/dob
-            // For now, we'll leave them empty or use placeholders
+            const fetchUserData = async () => {
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists()) {
+                    const userData = userDocSnap.data();
+                    setPhone(userData.phone || '');
+                    setDob(userData.dob || '');
+                }
+            };
+            fetchUserData();
         }
     }, [user]);
 
@@ -39,8 +48,17 @@ export default function ProfilePage() {
         }
         setIsLoading(true);
         try {
+            // Update auth profile
             await updateProfile(user, { displayName: username });
-            // Here you would also update phone/dob in Firestore/DB
+
+            // Update firestore document
+            const userDocRef = doc(db, "users", user.uid);
+            await setDoc(userDocRef, {
+                displayName: username,
+                phone: phone,
+                dob: dob,
+            }, { merge: true });
+
             toast({ title: 'Profile Updated', description: 'Your profile has been saved successfully.' });
             router.back();
         } catch (error: any) {
