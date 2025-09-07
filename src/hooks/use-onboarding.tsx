@@ -21,8 +21,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup');
   const isFoodPage = pathname.startsWith('/food');
   const isCartPage = pathname === '/cart';
+  const isCheckoutPage = pathname === '/checkout';
 
-  const showBottomNav = !isAuthPage && !isCartPage;
+  const showBottomNav = !isAuthPage && !isCartPage && !isCheckoutPage;
 
   return (
     <div className="relative flex min-h-screen flex-col">

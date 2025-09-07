@@ -11,6 +11,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
+
 
 const MopedIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -27,12 +29,22 @@ const MopedIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const { subtotal, total, loyaltyPoints } = useCart();
+    const { subtotal, total, loyaltyPoints, clearCart } = useCart();
     const [paymentMethod, setPaymentMethod] = useState('mobile-money');
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const fee = 0.0;
     const eLevy = 0.0;
     const finalTotal = total + fee + eLevy;
+
+    const handleConfirmOrder = () => {
+        setIsModalOpen(true);
+    };
+
+    const handleTrackOrder = () => {
+        clearCart();
+        router.push('/orders');
+    }
 
     return (
         <div className="min-h-screen food-pattern pb-32">
@@ -113,10 +125,25 @@ export default function CheckoutPage() {
             </main>
 
             <div className="fixed bottom-0 left-0 right-0 p-4">
-                <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14">
+                <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14" onClick={handleConfirmOrder}>
                     Confirm Order
                 </Button>
             </div>
+
+            <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                <AlertDialogContent className="max-w-xs rounded-2xl">
+                     <AlertDialogHeader className="items-center text-center">
+                        <Image src="https://picsum.photos/300/200" width={150} height={100} alt="Order Confirmed" data-ai-hint="order confirmation" />
+                        <AlertDialogTitle className="text-2xl font-bold font-headline">Order Confirmed</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Your order is confirmed! You'll receive updates as it progresses. Track the status anytime on the Orders page.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction className="w-full rounded-full bg-red-600 hover:bg-red-700" onClick={handleTrackOrder}>Track Order</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
