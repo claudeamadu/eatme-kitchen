@@ -11,6 +11,10 @@ interface DailySpecialCardProps {
 }
 
 export function DailySpecialCard({ recipe }: DailySpecialCardProps) {
+  const href = recipe.slug === 'assorted-jollof'
+    ? `/food/assorted-jollof`
+    : `/food/${recipe.slug}`;
+
   return (
     <Card className="w-full shadow-lg rounded-2xl overflow-hidden">
         <CardContent className="p-4 text-center">
@@ -24,7 +28,7 @@ export function DailySpecialCard({ recipe }: DailySpecialCardProps) {
                     data-ai-hint={recipe.imageHint}
                 />
             </div>
-            <Link href={`/recipes/${recipe.slug}`}>
+            <Link href={href}>
                 <CardTitle className="text-lg font-headline hover:text-primary transition-colors">{recipe.title}</CardTitle>
             </Link>
              <CardDescription className="text-sm line-clamp-2 mt-1 mb-3">

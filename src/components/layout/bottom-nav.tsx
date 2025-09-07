@@ -14,9 +14,9 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const isRecipePage = pathname.startsWith('/recipes');
+  const isFoodPage = pathname.startsWith('/food');
 
-  if (isRecipePage) {
+  if (isFoodPage) {
     return null;
   }
 
@@ -48,5 +48,3 @@ export default function BottomNav() {
     </footer>
   );
 }
-
-    

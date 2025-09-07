@@ -9,10 +9,9 @@ interface PopularDishCardProps {
 }
 
 export function PopularDishCard({ recipe }: PopularDishCardProps) {
-    // Special handling for Assorted Jollof to go to its custom page
     const href = recipe.slug === 'assorted-jollof'
-      ? `/recipes/assorted-jollof`
-      : `/recipes/${recipe.slug}`;
+      ? `/food/assorted-jollof`
+      : `/food/${recipe.slug}`;
 
     return (
         <Link href={href}>

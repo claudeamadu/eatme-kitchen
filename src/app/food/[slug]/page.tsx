@@ -7,10 +7,17 @@ import { UtensilsCrossed, Flame, Leaf, Soup } from 'lucide-react';
 import { FavoritesButton } from '@/components/favorites-button';
 import { Separator } from '@/components/ui/separator';
 
-export default function RecipePage() {
-  const recipe = recipes.find(r => r.slug === 'spaghetti-carbonara');
+export default function FoodPage({ params }: { params: { slug: string } }) {
+  const recipe = recipes.find(r => r.slug === params.slug);
 
   if (!recipe) {
+    notFound();
+  }
+  
+  // The 'assorted-jollof' slug has its own custom page, so we shouldn't render it here.
+  // This is a safeguard, but links should point to the correct page anyway.
+  if (recipe.slug === 'assorted-jollof') {
+    // Or we could redirect, but for now, this prevents rendering with the wrong component.
     notFound();
   }
 

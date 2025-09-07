@@ -11,10 +11,14 @@ interface RecipeCardProps {
 }
 
 export function RecipeCard({ recipe }: RecipeCardProps) {
+  const href = recipe.slug === 'assorted-jollof'
+      ? `/food/assorted-jollof`
+      : `/food/${recipe.slug}`;
+
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
       <CardHeader className="p-0 relative">
-        <Link href={`/recipes/${recipe.slug}`} className="block">
+        <Link href={href} className="block">
           <Image
             src={recipe.imageUrl}
             alt={recipe.title}
@@ -29,7 +33,7 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
         </div>
       </CardHeader>
       <CardContent className="p-4 flex flex-col flex-grow">
-        <Link href={`/recipes/${recipe.slug}`} className="flex-grow">
+        <Link href={href} className="flex-grow">
           <CardTitle className="text-lg font-headline mb-2 leading-snug hover:text-primary transition-colors">
             {recipe.title}
           </CardTitle>
