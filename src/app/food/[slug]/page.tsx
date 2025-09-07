@@ -1,88 +1,69 @@
+
+'use client';
+
+import { useState } from 'react';
 import { recipes } from '@/lib/recipes';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { UtensilsCrossed, Flame, Leaf, Soup } from 'lucide-react';
+import { ChevronLeft, Flame, Leaf, Minus, Plus, Soup, UtensilsCrossed } from 'lucide-react';
 import { FavoritesButton } from '@/components/favorites-button';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export default function FoodPage({ params }: { params: { slug: string } }) {
+  const router = useRouter();
   const recipe = recipes.find(r => r.slug === params.slug);
+  const [quantity, setQuantity] = useState(1);
 
   if (!recipe) {
     notFound();
   }
   
   // The 'assorted-jollof' slug has its own custom page, so we shouldn't render it here.
-  // This is a safeguard, but links should point to the correct page anyway.
   if (recipe.slug === 'assorted-jollof') {
-    // Or we could redirect, but for now, this prevents rendering with the wrong component.
     notFound();
   }
 
+  const price = parseFloat(recipe.nutrition.calories.split(' ')[0]);
+  const calculateTotal = () => (price * quantity);
+
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <article>
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-headline font-bold text-primary">{recipe.title}</h1>
-          <p className="text-lg text-muted-foreground mt-2 max-w-3xl mx-auto">{recipe.description}</p>
-        </div>
-        
-        <Card className="overflow-hidden mb-8">
-            <div className="relative">
-                <Image
-                    src={recipe.imageUrl}
-                    alt={recipe.title}
-                    width={1200}
-                    height={600}
-                    className="w-full h-64 md:h-96 object-cover"
-                    data-ai-hint={recipe.imageHint}
-                />
-                <div className="absolute top-4 right-4">
-                    <FavoritesButton recipeId={recipe.id} recipeTitle={recipe.title} />
-                </div>
-            </div>
-        </Card>
+    <div className="relative min-h-screen food-pattern">
+       <div className="absolute top-0 left-0 right-0 h-[45vh]">
+        <Image
+            src={recipe.imageUrl}
+            alt={recipe.title}
+            fill
+            className="object-cover"
+            data-ai-hint={recipe.imageHint}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl font-headline">Ingredients</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3 list-disc list-inside text-base">
-                  {recipe.ingredients.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+       <div className="absolute top-5 left-4 z-10">
+        <Button size="icon" variant="ghost" className="rounded-full bg-white/80 hover:bg-white backdrop-blur-sm" onClick={() => router.back()}>
+          <ChevronLeft className="h-6 w-6" />
+        </Button>
+      </div>
 
-            <Separator className="my-8" />
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl font-headline">Instructions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ol className="space-y-4 list-decimal list-inside">
-                  {recipe.instructions.map((step, index) => (
-                    <li key={index} className="pl-2">
-                      <p className="inline">{step}</p>
-                    </li>
-                  ))}
-                </ol>
-              </CardContent>
-            </Card>
-          </div>
-          <div className="lg:col-span-1">
-             <Card className="sticky top-24">
+      <div className="absolute top-5 right-4 z-10">
+         <FavoritesButton recipeId={recipe.id} recipeTitle={recipe.title} />
+      </div>
+
+      <div className="relative pt-[40vh]">
+        <div className="bg-background rounded-t-3xl p-6 pb-32">
+          <h1 className="text-3xl font-bold font-headline">{recipe.title}</h1>
+          <p className="text-muted-foreground text-base my-4">{recipe.description}</p>
+          
+           <Card className="bg-card">
                 <CardHeader>
-                    <CardTitle className="text-2xl font-headline">Details</CardTitle>
+                    <CardTitle className="text-xl font-headline">Details</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 text-sm">
                     <div className="flex items-center gap-2">
                         <UtensilsCrossed className="h-5 w-5 text-accent"/>
                         <span className="font-semibold">Cuisine:</span>
@@ -93,8 +74,8 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
                         {recipe.dietary.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
                     </div>
                      <Separator/>
-                    <CardTitle className="text-xl font-headline pt-2">Nutritional Info</CardTitle>
-                     <div className="space-y-2 text-sm">
+                    <CardTitle className="text-lg font-headline pt-2">Nutritional Info</CardTitle>
+                     <div className="space-y-2">
                         <div className="flex justify-between"><span><Flame className="inline h-4 w-4 mr-1"/>Calories:</span> <span>{recipe.nutrition.calories}</span></div>
                         <div className="flex justify-between"><span><Soup className="inline h-4 w-4 mr-1"/>Protein:</span> <span>{recipe.nutrition.protein}</span></div>
                         <div className="flex justify-between"><span><Leaf className="inline h-4 w-4 mr-1"/>Carbs:</span> <span>{recipe.nutrition.carbs}</span></div>
@@ -102,9 +83,28 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
                      </div>
                 </CardContent>
             </Card>
-          </div>
         </div>
-      </article>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 bg-transparent p-4">
+        <div className="container mx-auto flex items-center justify-between gap-2 max-w-md">
+          <div className="flex items-center gap-2 rounded-full bg-destructive/90 p-1 text-destructive-foreground backdrop-blur-sm">
+             <Button size="icon" variant="ghost" className="rounded-full hover:bg-destructive-foreground/20" onClick={() => setQuantity(q => Math.max(1, q-1))}>
+                <Minus className="h-5 w-5" />
+             </Button>
+             <span className="font-bold text-lg w-5 text-center">{quantity}</span>
+             <Button size="icon" variant="ghost" className="rounded-full hover:bg-destructive-foreground/20" onClick={() => setQuantity(q => q+1)}>
+                <Plus className="h-5 w-5" />
+             </Button>
+          </div>
+          <Button size="lg" className="flex-grow rounded-full bg-destructive/90 backdrop-blur-sm text-destructive-foreground hover:bg-destructive">
+            <div className="flex justify-between w-full items-center">
+                <span>Add to cart</span>
+                <span>GHC {calculateTotal().toFixed(2)}</span>
+            </div>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
