@@ -16,9 +16,7 @@ import { useCart } from '@/hooks/use-cart';
 
 const MenuItemCard = ({ item }: { item: food_item }) => {
     const { addToCart } = useCart();
-    const href = item.slug === 'assorted-jollof'
-      ? `/food/assorted-jollof`
-      : `/food/${item.slug}`;
+    const href = `/food/${item.slug}`;
       
     const handleAddToCart = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -49,14 +47,16 @@ const MenuItemCard = ({ item }: { item: food_item }) => {
                     <p className="text-muted-foreground text-sm line-clamp-2">{item.description}</p>
                     <p className="text-destructive font-bold text-base my-2">GHC {item.price.toFixed(2)}</p>
                 </div>
-                <Button 
-                    size="icon" 
-                    variant="outline" 
-                    className="rounded-full h-9 w-9 border-destructive text-destructive hover:bg-destructive/10"
-                    onClick={handleAddToCart}
-                >
-                    <Plus className="h-5 w-5" />
-                </Button>
+                {item.slug !== 'assorted-jollof' && (
+                    <Button 
+                        size="icon" 
+                        variant="outline" 
+                        className="rounded-full h-9 w-9 border-destructive text-destructive hover:bg-destructive/10"
+                        onClick={handleAddToCart}
+                    >
+                        <Plus className="h-5 w-5" />
+                    </Button>
+                )}
             </div>
         </Link>
     );
@@ -158,5 +158,3 @@ export default function MenuPage() {
         </div>
     );
 }
-
-    

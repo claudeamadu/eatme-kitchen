@@ -41,23 +41,25 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
   const [selectedExtras, setSelectedExtras] = useState<string[]>(['tilapia']);
   const [quantity, setQuantity] = useState(1);
 
-  const isCustomizable = params.slug === 'assorted-jollof';
+  const isCustomizable = item?.slug === 'assorted-jollof';
 
   useEffect(() => {
+    if (!params.slug) return;
+
     const fetchItem = async () => {
       setIsLoading(true);
       try {
         const q = query(collection(db, "foodItems"), where("slug", "==", params.slug), where("isDeleted", "!=", true));
         const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) {
-          notFound();
+          setItem(null);
         } else {
           const doc = querySnapshot.docs[0];
           setItem({ id: doc.id, ...doc.data() } as food_item);
         }
       } catch (error) {
         console.error("Error fetching food item:", error);
-        notFound();
+        setItem(null);
       } finally {
         setIsLoading(false);
       }
@@ -243,7 +245,3 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
     </div>
   );
 }
-
-    
-
-    
