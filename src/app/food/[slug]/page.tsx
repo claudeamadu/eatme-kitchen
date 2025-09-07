@@ -5,12 +5,29 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { notFound, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Minus, Plus, Star, Clock, Loader2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { ChevronLeft, Clock, Minus, Plus, Star, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useCart } from '@/hooks/use-cart';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, DocumentData } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import type { food_item } from '@/lib/types';
+import { Badge } from '@/components/ui/badge';
+
+
+// Data that would ideally come from Firestore for the specific item
+const sizes = [
+  { id: 'small', name: 'Small', price: 50 },
+  { id: 'medium', name: 'Medium', price: 90 },
+  { id: 'large', name: 'Large', price: 120 },
+];
+
+const extras = [
+  { id: 'grilled-chicken', name: 'Grilled Chicken', price: 15, image: 'https://picsum.photos/100/100?random=31', hint: 'grilled chicken' },
+  { id: 'fried-chicken', name: 'Fried Chicken', price: 10, image: 'https://picsum.photos/100/100?random=32', hint: 'fried chicken' },
+  { id: 'tilapia', name: 'Tilapia', price: 10, image: 'https://picsum.photos/100/100?random=33', hint: 'tilapia fish' },
+];
 
 
 export default function FoodPage({ params }: { params: { slug: string } }) {
@@ -18,18 +35,17 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
   const { addToCart } = useCart();
   const [item, setItem] = useState<food_item | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // State for customizable items
+  const [selectedSize, setSelectedSize] = useState('medium');
+  const [selectedExtras, setSelectedExtras] = useState<string[]>(['tilapia']);
   const [quantity, setQuantity] = useState(1);
+
+  const isCustomizable = params.slug === 'assorted-jollof';
 
   useEffect(() => {
     const fetchItem = async () => {
-      if (params.slug === 'assorted-jollof') {
-        // This specific slug has a custom page, so we can redirect or handle as needed.
-        // For this case, we'll let it 404 since the custom page exists.
-        setIsLoading(false);
-        notFound();
-        return;
-      }
-      
+      setIsLoading(true);
       try {
         const q = query(collection(db, "foodItems"), where("slug", "==", params.slug), where("isDeleted", "!=", true));
         const querySnapshot = await getDocs(q);
@@ -63,18 +79,55 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
     return notFound();
   }
 
-  const price = item.price;
-  const calculateTotal = () => (price * quantity);
+  const handleExtraToggle = (extraId: string) => {
+    setSelectedExtras(prev => 
+      prev.includes(extraId) 
+        ? prev.filter(id => id !== extraId) 
+        : [...prev, extraId]
+    );
+  };
 
+  const calculateTotal = () => {
+    if (!isCustomizable) {
+        return (item.price * quantity);
+    }
+    const sizePrice = sizes.find(s => s.id === selectedSize)?.price || 0;
+    const extrasPrice = selectedExtras.reduce((total, extraId) => {
+      const extra = extras.find(e => e.id === extraId);
+      return total + (extra?.price || 0);
+    }, 0);
+    return (sizePrice + extrasPrice) * quantity;
+  };
+  
   const handleAddToCart = () => {
-    addToCart({
-      id: item.id,
-      name: item.title,
-      price: item.price,
-      imageUrl: item.imageUrl,
-      imageHint: item.imageHint,
-      quantity: quantity,
-    });
+    if (isCustomizable) {
+        const sizePrice = sizes.find(s => s.id === selectedSize)?.price || 0;
+        const extrasPrice = selectedExtras.reduce((total, extraId) => {
+          const extra = extras.find(e => e.id === extraId);
+          return total + (extra?.price || 0);
+        }, 0);
+        const totalItemPrice = sizePrice + extrasPrice;
+        const extrasString = selectedExtras.map(id => extras.find(e => e.id === id)?.name).join(', ');
+
+        addToCart({
+          id: `${item.id}-${selectedSize}-${selectedExtras.join('-')}`,
+          name: `${item.title} (${sizes.find(s => s.id === selectedSize)?.name})`,
+          price: totalItemPrice,
+          imageUrl: item.imageUrl,
+          imageHint: item.imageHint,
+          extras: extrasString,
+          quantity: quantity,
+        });
+    } else {
+        addToCart({
+            id: item.id,
+            name: item.title,
+            price: item.price,
+            imageUrl: item.imageUrl,
+            imageHint: item.imageHint,
+            quantity: quantity,
+        });
+    }
   }
 
 
@@ -113,10 +166,58 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
           </div>
           <p className="text-muted-foreground text-base my-4">{item.description}</p>
           
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-6">
                 <Badge variant="secondary">{item.cuisine}</Badge>
                 {item.dietary?.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
             </div>
+            
+            {isCustomizable && (
+                <>
+                <section className="mb-6">
+                    <h2 className="text-xl font-bold font-headline mb-3">Available Sizes</h2>
+                    <RadioGroup value={selectedSize} onValueChange={setSelectedSize} className="grid grid-cols-3 gap-3">
+                    {sizes.map(size => (
+                        <div key={size.id}>
+                        <RadioGroupItem value={size.id} id={size.id} className="peer sr-only" />
+                        <Label htmlFor={size.id} className={cn(
+                            "flex flex-col items-center justify-center rounded-xl p-3 border-2 border-transparent transition-all",
+                            "peer-data-[state=unchecked]:bg-card peer-data-[state=unchecked]:shadow-sm",
+                            "peer-data-[state=checked]:bg-destructive peer-data-[state=checked]:text-destructive-foreground"
+                        )}>
+                            <span className="font-bold">{size.name}</span>
+                            <span className="text-sm">GHC {size.price}</span>
+                        </Label>
+                        </div>
+                    ))}
+                    </RadioGroup>
+                </section>
+
+                <section>
+                    <h2 className="text-xl font-bold font-headline mb-3">Extras</h2>
+                    <div className="grid grid-cols-3 gap-3">
+                    {extras.map(extra => (
+                        <div key={extra.id} onClick={() => handleExtraToggle(extra.id)}
+                        className={cn("rounded-xl border-2 p-2 text-center cursor-pointer transition-all",
+                            selectedExtras.includes(extra.id) ? 'border-destructive bg-destructive/10' : 'border-transparent bg-card shadow-sm'
+                        )}
+                        >
+                        <div className="relative">
+                            <Image src={extra.image} alt={extra.name} width={80} height={80} data-ai-hint={extra.hint} className="w-full h-20 object-cover rounded-md mb-2"/>
+                            <div className={cn("absolute top-2 right-2 h-5 w-5 rounded-full border-2 bg-card flex items-center justify-center",
+                                selectedExtras.includes(extra.id) ? 'border-destructive' : 'border-muted-foreground/30'
+                            )}>
+                                {selectedExtras.includes(extra.id) && <div className="h-2.5 w-2.5 rounded-full bg-destructive" />}
+                            </div>
+                        </div>
+                        <p className="font-semibold text-sm">{extra.name}</p>
+                        <p className={cn("font-bold text-xs", selectedExtras.includes(extra.id) ? "text-destructive": "text-muted-foreground")}>GHC {extra.price}</p>
+                        </div>
+                    ))}
+                    </div>
+                </section>
+                </>
+            )}
+
         </div>
       </div>
 
@@ -142,5 +243,7 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
     </div>
   );
 }
+
+    
 
     
