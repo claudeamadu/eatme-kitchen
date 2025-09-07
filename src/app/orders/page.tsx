@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -113,10 +114,12 @@ export default function OrdersPage() {
               <ShoppingCart className="h-6 w-6 text-muted-foreground" />
             </Button>
           </Link>
-          <Button variant="ghost" size="icon" className="relative bg-card rounded-lg">
-            <Bell className="h-6 w-6 text-destructive" />
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 rounded-full bg-destructive text-destructive-foreground">2</Badge>
-          </Button>
+          <Link href="/notifications">
+            <Button variant="ghost" size="icon" className="relative bg-card rounded-lg">
+                <Bell className="h-6 w-6 text-destructive" />
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 rounded-full bg-destructive text-destructive-foreground">2</Badge>
+            </Button>
+          </Link>
         </div>
       </header>
       <main className="container mx-auto px-4 pb-8">
