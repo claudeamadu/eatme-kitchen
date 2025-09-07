@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import OnboardingPage from '@/app/onboarding/page';
 import BottomNav from '@/components/layout/bottom-nav';
 import { cn } from '@/lib/utils';
+import { CartProvider } from './use-cart';
 
 const ONBOARDING_KEY = 'eatme-onboarding-complete';
 
@@ -19,12 +20,13 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup');
   const isFoodPage = pathname.startsWith('/food');
+  const isCartPage = pathname === '/cart';
 
-  const showBottomNav = !isAuthPage;
+  const showBottomNav = !isAuthPage && !isCartPage;
 
   return (
     <div className="relative flex min-h-screen flex-col">
-      <main className={cn("flex-1", !isFoodPage && "pb-20")}>{children}</main>
+      <main className={cn("flex-1", showBottomNav && "pb-20")}>{children}</main>
       {showBottomNav && <BottomNav />}
     </div>
   );
@@ -63,13 +65,15 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <OnboardingContext.Provider value={value}>
-      {showOnboarding ? (
-        <OnboardingPage />
-      ) : isAuthPage ? (
-        children
-      ) : (
-        <AppLayout>{children}</AppLayout>
-      )}
+       <CartProvider>
+            {showOnboarding ? (
+                <OnboardingPage />
+            ) : isAuthPage ? (
+                children
+            ) : (
+                <AppLayout>{children}</AppLayout>
+            )}
+       </CartProvider>
     </OnboardingContext.Provider>
   );
 };

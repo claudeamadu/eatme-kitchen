@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Bell, MoreVertical, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 type OrderStatus = 'Ongoing' | 'Completed' | 'Cancelled';
 
@@ -107,9 +108,11 @@ export default function OrdersPage() {
       <header className="container mx-auto px-4 py-6 flex justify-between items-center">
         <h1 className="text-4xl font-headline font-bold">Orders</h1>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="relative bg-card rounded-lg">
-            <ShoppingCart className="h-6 w-6 text-muted-foreground" />
-          </Button>
+          <Link href="/cart">
+            <Button variant="ghost" size="icon" className="relative bg-card rounded-lg">
+              <ShoppingCart className="h-6 w-6 text-muted-foreground" />
+            </Button>
+          </Link>
           <Button variant="ghost" size="icon" className="relative bg-card rounded-lg">
             <Bell className="h-6 w-6 text-destructive" />
             <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 rounded-full bg-destructive text-destructive-foreground">2</Badge>

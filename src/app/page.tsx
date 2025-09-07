@@ -24,9 +24,11 @@ export default function HomePage() {
             <p className="text-muted-foreground">We hope you're in a good mood to dine.</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative bg-card rounded-lg">
-              <ShoppingCart className="h-6 w-6 text-muted-foreground" />
-            </Button>
+            <Link href="/cart">
+              <Button variant="ghost" size="icon" className="relative bg-card rounded-lg">
+                <ShoppingCart className="h-6 w-6 text-muted-foreground" />
+              </Button>
+            </Link>
             <Button variant="ghost" size="icon" className="relative bg-card rounded-lg">
               <Bell className="h-6 w-6 text-destructive" />
               <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0 rounded-full bg-destructive text-destructive-foreground">2</Badge>
