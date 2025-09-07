@@ -74,7 +74,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (!splashShown && isLoaded) {
+    if (isLoaded && !splashShown) {
       const timer = setTimeout(() => {
         try {
             sessionStorage.setItem(SPLASH_KEY, 'true');
@@ -85,7 +85,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
       }, 3000); // 3 seconds
       return () => clearTimeout(timer);
     }
-  }, [splashShown, isLoaded]);
+  }, [isLoaded, splashShown]);
 
   const completeOnboarding = () => {
     try {
@@ -130,7 +130,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
             return <OnboardingPage />;
         }
         // If onboarding is complete, but user is trying to access other pages, redirect to login
-        if (!pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
+        if (!pathname.startsWith('/login') && !pathname.startsWith('/signup') && !pathname.startsWith('/onboarding')) {
              router.replace('/login');
              return (
                 <div className="fixed inset-0 bg-background flex items-center justify-center">
