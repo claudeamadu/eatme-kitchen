@@ -1,4 +1,6 @@
 
+import { Timestamp } from 'firebase/firestore';
+
 export type food_item = {
   id: string;
   slug: string;
@@ -25,13 +27,11 @@ export type order_status = 'Ongoing' | 'Completed' | 'Cancelled';
 
 export interface order {
     id: string;
+    userId: string;
+    items: cart_item[];
+    total: number;
     status: order_status;
-    items: {
-      name: string;
-      image: string;
-      hint: string;
-    }[];
-    price: string;
+    createdAt: Timestamp;
 }
 
 export type notification_type = 'success' | 'error' | 'info' | 'update';

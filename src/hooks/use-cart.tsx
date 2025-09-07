@@ -17,28 +17,6 @@ interface CartContextType {
 
 const CART_KEY = 'eatme-cart';
 
-const mockCartItems: cart_item[] = [
-    {
-        id: '4-medium-tilapia',
-        name: 'Assorted Jollof',
-        extras: 'Extra Tilapia',
-        price: 100,
-        quantity: 1,
-        imageUrl: 'https://picsum.photos/600/400',
-        imageHint: 'jollof rice',
-    },
-    {
-        id: '1-noodles',
-        name: 'Assorted Noodles',
-        extras: 'Freshly made noodles with vegetables, chicken, sausage...',
-        price: 100,
-        quantity: 1,
-        imageUrl: 'https://picsum.photos/600/400',
-        imageHint: 'noodles',
-    }
-];
-
-
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
@@ -46,16 +24,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
+    let storedCart: string | null = null;
     try {
-      const storedCart = localStorage.getItem(CART_KEY);
-      // Forcing mock data for demonstration
-      setItems(mockCartItems);
-      // if (storedCart) {
-      //   setItems(JSON.parse(storedCart));
-      // }
+      storedCart = localStorage.getItem(CART_KEY);
+      if (storedCart) {
+        setItems(JSON.parse(storedCart));
+      }
     } catch (error) {
       console.error('Failed to parse cart from localStorage', error);
-      setItems(mockCartItems); // Fallback to mock data
+      // In case of error, cart remains empty
+      setItems([]);
     }
     setIsLoaded(true);
   }, []);

@@ -5,13 +5,17 @@ import { useState } from 'react';
 import { useCart } from '@/hooks/use-cart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, PlusCircle, Radio, Receipt, Wallet, Circle } from 'lucide-react';
+import { ChevronLeft, PlusCircle, Radio, Receipt, Wallet, Circle, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
+import { useOnboarding } from '@/hooks/use-onboarding';
+import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 
 const MopedIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -29,16 +33,55 @@ const MopedIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const { subtotal, total, loyaltyPoints, clearCart } = useCart();
+    const { items, total, clearCart } = useCart();
+    const { user } = useOnboarding();
+    const { toast } = useToast();
     const [paymentMethod, setPaymentMethod] = useState('mobile-money');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const fee = 0.0;
     const eLevy = 0.0;
     const finalTotal = total + fee + eLevy;
 
-    const handleConfirmOrder = () => {
-        setIsModalOpen(true);
+    const handleConfirmOrder = async () => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Not Authenticated', description: 'Please log in to place an order.' });
+            return;
+        }
+        if (items.length === 0) {
+            toast({ variant: 'destructive', title: 'Empty Cart', description: 'Your cart is empty.' });
+            return;
+        }
+
+        setIsProcessing(true);
+        try {
+            const orderData = {
+                userId: user.uid,
+                items: items.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price,
+                    imageUrl: item.imageUrl,
+                    imageHint: item.imageHint,
+                    extras: item.extras,
+                })),
+                total: finalTotal,
+                status: 'Ongoing',
+                createdAt: serverTimestamp(),
+            };
+
+            const ordersCollectionRef = collection(db, 'orders');
+            await addDoc(ordersCollectionRef, orderData);
+            
+            setIsModalOpen(true);
+        } catch (error: any) {
+            console.error("Error creating order:", error);
+            toast({ variant: 'destructive', title: 'Order Failed', description: error.message });
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     const handleTrackOrder = () => {
@@ -125,8 +168,9 @@ export default function CheckoutPage() {
             </main>
 
             <div className="fixed bottom-0 left-0 right-0 p-4">
-                <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14" onClick={handleConfirmOrder}>
-                    Confirm Order
+                <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14" onClick={handleConfirmOrder} disabled={isProcessing}>
+                    {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isProcessing ? 'Processing...' : 'Confirm Order'}
                 </Button>
             </div>
 
