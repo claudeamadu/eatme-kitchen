@@ -57,7 +57,7 @@ export default function CheckoutPage() {
         setIsProcessing(true);
         try {
             const orderData = {
-                userId: user.uid,
+                uid: user.uid,
                 items: items.map(item => ({
                     id: item.id,
                     name: item.name,

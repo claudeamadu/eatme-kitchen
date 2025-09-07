@@ -81,7 +81,7 @@ export default function OrdersPage() {
             setIsLoading(true);
             const ordersQuery = query(
                 collection(db, 'orders'),
-                where('userId', '==', user.uid),
+                where('uid', '==', user.uid),
                 orderBy('createdAt', 'desc')
             );
 

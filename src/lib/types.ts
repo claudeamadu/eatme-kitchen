@@ -27,7 +27,7 @@ export type order_status = 'Ongoing' | 'Completed' | 'Cancelled';
 
 export interface order {
     id: string;
-    userId: string;
+    uid: string;
     items: cart_item[];
     total: number;
     status: order_status;
