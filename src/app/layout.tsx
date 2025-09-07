@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import Header from '@/components/layout/header';
+import { OnboardingProvider } from '@/hooks/use-onboarding';
 
 export const metadata: Metadata = {
   title: 'EatMe - Your Culinary Companion',
@@ -24,11 +25,13 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <div className="relative flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1">{children}</main>
-        </div>
-        <Toaster />
+        <OnboardingProvider>
+          <div className="relative flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
+          </div>
+          <Toaster />
+        </OnboardingProvider>
       </body>
     </html>
   );
