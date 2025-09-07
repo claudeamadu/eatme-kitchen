@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Settings, ReceiptText, ChefHat, Heart, User } from 'lucide-react';
+import { Home, Settings, ReceiptText, ChefHat } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -14,11 +14,6 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const isFoodPage = pathname.startsWith('/food');
-
-  if (isFoodPage) {
-    return null;
-  }
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm">
