@@ -8,11 +8,13 @@ import { db } from '@/lib/firebase';
 import type { order, cart_item } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, MapPin, Loader2 } from 'lucide-react';
+import { ChevronLeft, Loader2, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { format } from 'date-fns';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
+import { useToast } from '@/hooks/use-toast';
 
 const statusColors: { [key: string]: string } = {
   Ongoing: 'text-orange-500 bg-orange-100',
@@ -27,14 +29,35 @@ const DetailRow = ({ label, value, valueClass }: { label: string; value: string;
   </div>
 );
 
+const StarRating = ({ rating, setRating }: { rating: number, setRating: (rating: number) => void }) => {
+    return (
+        <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onClick={() => setRating(star)}>
+                    <Star
+                        className={cn(
+                            "h-6 w-6 transition-colors",
+                            star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                        )}
+                    />
+                </button>
+            ))}
+        </div>
+    );
+};
+
+
 export default function OrderDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { id } = params;
+  const { toast } = useToast();
 
   const [order, setOrder] = useState<order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRatingSheetOpen, setIsRatingSheetOpen] = useState(false);
+  const [ratings, setRatings] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (typeof id !== 'string') {
@@ -49,7 +72,13 @@ export default function OrderDetailPage() {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          setOrder({ id: docSnap.id, ...docSnap.data() } as order);
+          const orderData = { id: docSnap.id, ...docSnap.data() } as order;
+          setOrder(orderData);
+          const initialRatings: Record<string, number> = {};
+          orderData.items.forEach(item => {
+            initialRatings[item.id] = 0;
+          });
+          setRatings(initialRatings);
         } else {
           setError('Order not found.');
         }
@@ -63,6 +92,20 @@ export default function OrderDetailPage() {
 
     fetchOrder();
   }, [id]);
+  
+  const handleRatingChange = (itemId: string, rating: number) => {
+    setRatings(prev => ({ ...prev, [itemId]: rating }));
+  };
+
+  const submitRatings = () => {
+    console.log('Submitting ratings:', ratings);
+    // For now, we just close the sheet and show a toast
+    setIsRatingSheetOpen(false);
+    toast({
+        title: "Ratings Submitted",
+        description: "Thank you for your feedback!",
+    });
+  };
 
   if (isLoading) {
     return (
@@ -118,16 +161,6 @@ export default function OrderDetailPage() {
 
         <Card className="rounded-2xl shadow-lg">
             <CardContent className="p-6">
-                <p className="text-sm font-bold text-muted-foreground mb-2">Delivery</p>
-                <div className="flex items-center gap-3">
-                    <MapPin className="h-6 w-6 text-destructive" />
-                    <p className="font-semibold">No. 5 Hibis Street.</p>
-                </div>
-            </CardContent>
-        </Card>
-        
-        <Card className="rounded-2xl shadow-lg">
-            <CardContent className="p-6">
                  <p className="text-sm font-bold text-muted-foreground mb-4">Dishes</p>
                  <ul className="space-y-4">
                     {order.items.map((item: cart_item) => (
@@ -167,11 +200,45 @@ export default function OrderDetailPage() {
              <Button size="lg" className="w-full rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14">
                 Order Again!
             </Button>
-            <Button size="lg" variant="outline" className="w-full rounded-full bg-card/80 backdrop-blur-sm text-lg h-14 mt-3">
+            <Button size="lg" variant="outline" className="w-full rounded-full bg-card/80 backdrop-blur-sm text-lg h-14 mt-3" onClick={() => setIsRatingSheetOpen(true)}>
                 Rate Dishes
             </Button>
         </div>
       </div>
+
+       <Sheet open={isRatingSheetOpen} onOpenChange={setIsRatingSheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl p-6">
+          <SheetHeader className="text-center mb-4">
+            <SheetTitle className="text-xl font-bold font-headline">Rate Your Dishes</SheetTitle>
+            <SheetDescription>Let us know how you enjoyed your meal!</SheetDescription>
+          </SheetHeader>
+          <div className="space-y-6 max-h-[60vh] overflow-y-auto px-1">
+             {order.items.map(item => (
+                <div key={item.id} className="flex items-center gap-4">
+                     <Image
+                        src={item.imageUrl}
+                        alt={item.name}
+                        width={64}
+                        height={64}
+                        className="rounded-lg object-cover w-16 h-16"
+                        data-ai-hint={item.imageHint || 'food item'}
+                     />
+                     <div className="flex-grow">
+                        <p className="font-bold">{item.name}</p>
+                        <StarRating rating={ratings[item.id] || 0} setRating={(rating) => handleRatingChange(item.id, rating)} />
+                     </div>
+                </div>
+             ))}
+          </div>
+          <SheetFooter className="mt-6">
+            <Button size="lg" className="w-full rounded-full bg-red-600 hover:bg-red-700 text-white" onClick={submitRatings}>
+                Submit Ratings
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
+
+    
