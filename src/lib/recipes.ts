@@ -124,4 +124,22 @@ export const recipes: Recipe[] = [
       fat: '25g',
     },
   },
+  {
+    id: '4',
+    slug: 'assorted-jollof',
+    title: 'Assorted Jollof',
+    description: 'Enjoy a well-prepared plate of jollof rice, made fresh with a blend of vegetables, chicken, sausage, gizzard and beef. This chef-made dish comes with a side of shito and coleslaw for a balanced and flavorful meal. Simple, satisfying and delicious.',
+    imageUrl: 'https://picsum.photos/800/600',
+    imageHint: 'jollof rice',
+    cuisine: 'Ghanaian',
+    dietary: [],
+    ingredients: [],
+    instructions: [],
+    nutrition: {
+      calories: '90',
+      protein: 'N/A',
+      carbs: 'N/A',
+      fat: 'N/A',
+    },
+  }
 ];

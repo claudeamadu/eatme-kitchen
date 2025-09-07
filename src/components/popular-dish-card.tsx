@@ -9,8 +9,13 @@ interface PopularDishCardProps {
 }
 
 export function PopularDishCard({ recipe }: PopularDishCardProps) {
+    // Special handling for Assorted Jollof to go to its custom page
+    const href = recipe.slug === 'assorted-jollof'
+      ? `/recipes/assorted-jollof`
+      : `/recipes/${recipe.slug}`;
+
     return (
-        <Link href={`/recipes/${recipe.slug}`}>
+        <Link href={href}>
             <div className="bg-card p-3 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
                 <Image
                     src={recipe.imageUrl}
