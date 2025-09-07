@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -26,11 +27,22 @@ export default function SignupPage() {
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      if (userCredential.user) {
-        await updateProfile(userCredential.user, {
+      const user = userCredential.user;
+      
+      // Update profile and create firestore document
+      if (user) {
+        await updateProfile(user, {
           displayName: name,
         });
+
+        await setDoc(doc(db, "users", user.uid), {
+            uid: user.uid,
+            displayName: name,
+            email: email,
+            createdAt: new Date(),
+        });
       }
+
       toast({
         title: 'Signup Successful',
         description: "Your account has been created.",
