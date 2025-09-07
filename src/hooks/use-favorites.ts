@@ -30,19 +30,19 @@ export const useFavorites = () => {
     }
   }, [favorites, isLoaded]);
 
-  const toggleFavorite = useCallback((recipeId: string) => {
+  const toggleFavorite = useCallback((itemId: string) => {
     setFavorites((prevFavorites) => {
-      if (prevFavorites.includes(recipeId)) {
-        return prevFavorites.filter((id) => id !== recipeId);
+      if (prevFavorites.includes(itemId)) {
+        return prevFavorites.filter((id) => id !== itemId);
       } else {
-        return [...prevFavorites, recipeId];
+        return [...prevFavorites, itemId];
       }
     });
   }, []);
 
   const isFavorite = useCallback(
-    (recipeId: string) => {
-      return favorites.includes(recipeId);
+    (itemId: string) => {
+      return favorites.includes(itemId);
     },
     [favorites]
   );

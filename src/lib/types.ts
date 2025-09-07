@@ -1,4 +1,4 @@
-export type recipe = {
+export type food_item = {
   id: string;
   slug: string;
   title: string;
@@ -7,14 +7,7 @@ export type recipe = {
   imageHint: string;
   cuisine: string;
   dietary: string[];
-  ingredients: string[];
-  instructions: string[];
-  nutrition: {
-    calories: string;
-    protein: string;
-    carbs: string;
-    fat: string;
-  };
+  price: number;
 };
 
 export interface cart_item {

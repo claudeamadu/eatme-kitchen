@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { recipes } from '@/lib/recipes';
+import { foodItems } from '@/lib/food';
 import Image from 'next/image';
 import { notFound, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { ChevronLeft, Clock, Minus, Plus, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { FavoritesButton } from '@/components/favorites-button';
 
 const sizes = [
   { id: 'small', name: 'Small', price: 50 },
@@ -26,13 +25,13 @@ const extras = [
 
 export default function AssortedJollofPage() {
   const router = useRouter();
-  const recipe = recipes.find(r => r.slug === 'assorted-jollof');
+  const item = foodItems.find(r => r.slug === 'assorted-jollof');
   
   const [selectedSize, setSelectedSize] = useState('medium');
   const [selectedExtras, setSelectedExtras] = useState<string[]>(['tilapia']);
   const [quantity, setQuantity] = useState(1);
 
-  if (!recipe) {
+  if (!item) {
     notFound();
   }
 
@@ -57,11 +56,11 @@ export default function AssortedJollofPage() {
     <div className="relative min-h-screen food-pattern">
       <div className="absolute top-0 left-0 right-0 h-[45vh]">
         <Image
-          src={recipe.imageUrl}
-          alt={recipe.title}
+          src={item.imageUrl}
+          alt={item.title}
           fill
           className="object-cover"
-          data-ai-hint={recipe.imageHint}
+          data-ai-hint={item.imageHint}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
       </div>
@@ -72,13 +71,9 @@ export default function AssortedJollofPage() {
         </Button>
       </div>
 
-      <div className="absolute top-5 right-4 z-10">
-         <FavoritesButton recipeId={recipe.id} recipeTitle={recipe.title} />
-      </div>
-
       <div className="relative pt-[40vh]">
         <div className="bg-background rounded-t-3xl p-6 pb-32">
-          <h1 className="text-3xl font-bold font-headline">{recipe.title}</h1>
+          <h1 className="text-3xl font-bold font-headline">{item.title}</h1>
           <div className="flex items-center gap-4 text-muted-foreground my-3">
             <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
@@ -90,7 +85,7 @@ export default function AssortedJollofPage() {
                 <span className="text-sm">10-20 mins</span>
             </div>
           </div>
-          <p className="text-muted-foreground text-base mb-6">{recipe.description}</p>
+          <p className="text-muted-foreground text-base mb-6">{item.description}</p>
 
           <section className="mb-6">
             <h2 className="text-xl font-bold font-headline mb-3">Available Sizes</h2>

@@ -2,29 +2,28 @@
 'use client';
 
 import { useState } from 'react';
-import { recipes } from '@/lib/recipes';
+import { foodItems } from '@/lib/food';
 import Image from 'next/image';
 import { notFound, useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, Flame, Leaf, Minus, Plus, Soup, Star, Clock } from 'lucide-react';
-import { FavoritesButton } from '@/components/favorites-button';
 import { Button } from '@/components/ui/button';
+import { ChevronLeft, Minus, Plus, Star, Clock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+
 
 export default function FoodPage({ params }: { params: { slug: string } }) {
   const router = useRouter();
-  const recipe = recipes.find(r => r.slug === params.slug);
+  const item = foodItems.find(r => r.slug === params.slug);
   const [quantity, setQuantity] = useState(1);
 
-  if (!recipe) {
+  if (!item) {
     notFound();
   }
   
-  if (recipe.slug === 'assorted-jollof') {
+  if (item.slug === 'assorted-jollof') {
     notFound();
   }
 
-  const price = parseFloat(recipe.nutrition.calories.split(' ')[0]);
+  const price = item.price;
   const calculateTotal = () => (price * quantity);
 
 
@@ -32,11 +31,11 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
     <div className="relative min-h-screen food-pattern">
        <div className="absolute top-0 left-0 right-0 h-[45vh]">
         <Image
-            src={recipe.imageUrl}
-            alt={recipe.title}
+            src={item.imageUrl}
+            alt={item.title}
             fill
             className="object-cover"
-            data-ai-hint={recipe.imageHint}
+            data-ai-hint={item.imageHint}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
       </div>
@@ -47,13 +46,9 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
         </Button>
       </div>
 
-      <div className="absolute top-5 right-4 z-10">
-         <FavoritesButton recipeId={recipe.id} recipeTitle={recipe.title} />
-      </div>
-
       <div className="relative pt-[40vh]">
         <div className="bg-background rounded-t-3xl p-6 pb-32">
-          <h1 className="text-3xl font-bold font-headline">{recipe.title}</h1>
+          <h1 className="text-3xl font-bold font-headline">{item.title}</h1>
            <div className="flex items-center gap-4 text-muted-foreground my-3">
             <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
@@ -65,11 +60,11 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
                 <span className="text-sm">15-25 mins</span>
             </div>
           </div>
-          <p className="text-muted-foreground text-base my-4">{recipe.description}</p>
+          <p className="text-muted-foreground text-base my-4">{item.description}</p>
           
             <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">{recipe.cuisine}</Badge>
-                {recipe.dietary.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+                <Badge variant="secondary">{item.cuisine}</Badge>
+                {item.dietary.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
             </div>
         </div>
       </div>
@@ -96,4 +91,3 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
     </div>
   );
 }
-

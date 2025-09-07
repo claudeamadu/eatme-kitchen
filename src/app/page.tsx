@@ -1,21 +1,19 @@
 
 'use client';
 
-import { Bell, Search, ShoppingCart, Plus, ArrowRight, Heart } from 'lucide-react';
+import { Bell, ShoppingCart, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { recipes } from '@/lib/recipes';
+import { foodItems } from '@/lib/food';
 import Image from 'next/image';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
-import { DailySpecialCard } from '@/components/daily-special-card';
-import { PopularDishCard } from '@/components/popular-dish-card';
 import { PromoCard } from '@/components/promo-card';
 import type { promo_card_props } from '@/lib/types';
+import { PopularDishCard } from '@/components/popular-dish-card';
 
-const dailySpecials = recipes.slice(0, 3);
-const popularDishes = recipes.slice(0, 2);
+const popularDishes = foodItems.slice(0, 2);
 
 const promos: promo_card_props[] = [
   {
@@ -74,20 +72,7 @@ export default function HomePage() {
           </CarouselContent>
         </Carousel>
       </section>
-
-      <section className="mb-8">
-        <h2 className="text-xl font-bold font-headline container mx-auto px-4 mb-3">Daily Specials</h2>
-        <Carousel opts={{ loop: true, align: 'start' }} className="w-full">
-          <CarouselContent className="-ml-2">
-            {dailySpecials.map((recipe, index) => (
-              <CarouselItem key={index} className="pl-4 basis-3/4 md:basis-1/2 lg:basis-1/3">
-                <DailySpecialCard recipe={recipe} />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
-      </section>
-
+      
       <section className="container mx-auto px-4 mb-8">
         <Card className="p-4 flex items-center justify-between gap-4 bg-card shadow-lg rounded-2xl">
           <div className="flex-1">
@@ -110,8 +95,8 @@ export default function HomePage() {
             </Link>
         </div>
         <div className="space-y-4">
-            {popularDishes.map(recipe => (
-               <PopularDishCard key={recipe.id} recipe={recipe} />
+            {popularDishes.map(item => (
+               <PopularDishCard key={item.id} item={item} />
             ))}
         </div>
       </main>
