@@ -18,7 +18,7 @@ const SPLASH_KEY = 'eatme-splash-shown';
 interface OnboardingContextType {
   hasCompletedOnboarding: boolean;
   completeOnboarding: () => void;
-  user: User | null;
+  user: User | null | undefined;
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -40,7 +40,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [splashShown, setSplashShown] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null | undefined>(undefined);
   const [authLoaded, setAuthLoaded] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -55,7 +55,6 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
 
     } catch (error) {
       console.error('Failed to read from storage', error);
-      // Fallback safely
       setHasCompletedOnboarding(true); 
       setSplashShown(true);
     }
@@ -79,7 +78,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
             console.error("Failed to set sessionStorage", e);
         }
         setSplashShown(true);
-      }, 3000); // 3 seconds
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [isLoaded, splashShown]);
@@ -96,37 +95,26 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const value = { hasCompletedOnboarding, completeOnboarding, user };
   
   const renderContent = () => {
-    // 1. Show Splash if not shown yet or if auth/storage is not loaded
-    if (!isLoaded || !splashShown) {
+    if (!isLoaded || !splashShown || !authLoaded) {
       return <SplashScreen />;
     }
 
-    // After splash, wait for auth to be loaded
-    if (!authLoaded) {
-       return (
-        <div className="fixed inset-0 bg-background flex items-center justify-center">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        </div>
-       )
+    if (pathname.startsWith('/admin')) {
+        return <>{children}</>;
     }
-
-    // 2. If auth is loaded and user is logged in
+    
     if (user) {
-        // If user is logged in but trying to access auth pages, redirect to home
         if (pathname.startsWith('/login') || pathname.startsWith('/signup')) {
             router.replace('/');
-            return <AppLayout><div /></AppLayout>; // Render empty while redirecting
+            return <AppLayout><div /></AppLayout>;
         }
         return <AppLayout>{children}</AppLayout>;
     }
     
-    // 3. If auth is loaded but no user (logged out)
     if (!user) {
-        // If onboarding is not complete, show it
         if (!hasCompletedOnboarding) {
             return <OnboardingPage />;
         }
-        // If onboarding is complete, but user is trying to access other pages, redirect to login
         if (!pathname.startsWith('/login') && !pathname.startsWith('/signup') && !pathname.startsWith('/onboarding')) {
              router.replace('/login');
              return (
@@ -135,11 +123,9 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
                 </div>
             );
         }
-        // Allow access to login/signup pages
         return <>{children}</>;
     }
     
-    // Fallback loading state
     return (
         <div className="fixed inset-0 bg-background flex items-center justify-center">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />

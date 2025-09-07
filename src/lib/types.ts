@@ -78,3 +78,11 @@ export interface LoyaltyData {
   reviews: number;
   orders: number;
 }
+
+export interface user {
+  uid: string;
+  displayName: string;
+  email: string;
+  phone?: string;
+  dob?: string;
+}
