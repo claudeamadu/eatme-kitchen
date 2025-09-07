@@ -1,11 +1,13 @@
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useMemo } from 'react';
 import type { cart_item } from '@/lib/types';
+import { useToast } from './use-toast';
 
 interface CartContextType {
   items: cart_item[];
-  addToCart: (item: Omit<cart_item, 'quantity'>) => void;
+  addToCart: (item: Omit<cart_item, 'quantity'> & { quantity?: number }) => void;
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -22,6 +24,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<cart_item[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     let storedCart: string | null = null;
@@ -48,16 +51,21 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [items, isLoaded]);
 
-  const addToCart = (itemToAdd: Omit<cart_item, 'quantity'>) => {
+  const addToCart = (itemToAdd: Omit<cart_item, 'quantity'> & { quantity?: number }) => {
+    const quantityToAdd = itemToAdd.quantity || 1;
     setItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.id === itemToAdd.id);
       if (existingItem) {
         return prevItems.map((item) =>
-          item.id === itemToAdd.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === itemToAdd.id ? { ...item, quantity: item.quantity + quantityToAdd } : item
         );
       }
-      return [...prevItems, { ...itemToAdd, quantity: 1 }];
+      return [...prevItems, { ...itemToAdd, quantity: quantityToAdd }];
     });
+    toast({
+      title: "Added to Cart",
+      description: `${itemToAdd.name} has been added to your cart.`,
+    })
   };
 
   const removeFromCart = (itemId: string) => {

@@ -8,10 +8,12 @@ import { notFound, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, Minus, Plus, Star, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useCart } from '@/hooks/use-cart';
 
 
 export default function FoodPage({ params }: { params: { slug: string } }) {
   const router = useRouter();
+  const { addToCart } = useCart();
   const item = foodItems.find(r => r.slug === params.slug);
   const [quantity, setQuantity] = useState(1);
 
@@ -25,6 +27,17 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
 
   const price = item.price;
   const calculateTotal = () => (price * quantity);
+
+  const handleAddToCart = () => {
+    addToCart({
+      id: item.id,
+      name: item.title,
+      price: item.price,
+      imageUrl: item.imageUrl,
+      imageHint: item.imageHint,
+      quantity: quantity,
+    });
+  }
 
 
   return (
@@ -80,7 +93,7 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
                 <Plus className="h-5 w-5" />
              </Button>
           </div>
-          <Button size="lg" className="flex-grow rounded-full bg-destructive/90 backdrop-blur-sm text-destructive-foreground hover:bg-destructive">
+          <Button size="lg" className="flex-grow rounded-full bg-destructive/90 backdrop-blur-sm text-destructive-foreground hover:bg-destructive" onClick={handleAddToCart}>
             <div className="flex justify-between w-full items-center">
                 <span>Add to cart</span>
                 <span>GHC {calculateTotal().toFixed(2)}</span>

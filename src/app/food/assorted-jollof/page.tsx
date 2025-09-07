@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { ChevronLeft, Clock, Minus, Plus, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCart } from '@/hooks/use-cart';
 
 const sizes = [
   { id: 'small', name: 'Small', price: 50 },
@@ -25,6 +26,7 @@ const extras = [
 
 export default function AssortedJollofPage() {
   const router = useRouter();
+  const { addToCart } = useCart();
   const item = foodItems.find(r => r.slug === 'assorted-jollof');
   
   const [selectedSize, setSelectedSize] = useState('medium');
@@ -51,6 +53,27 @@ export default function AssortedJollofPage() {
     }, 0);
     return (sizePrice + extrasPrice) * quantity;
   };
+  
+  const handleAddToCart = () => {
+    const sizePrice = sizes.find(s => s.id === selectedSize)?.price || 0;
+    const extrasPrice = selectedExtras.reduce((total, extraId) => {
+      const extra = extras.find(e => e.id === extraId);
+      return total + (extra?.price || 0);
+    }, 0);
+    const totalItemPrice = sizePrice + extrasPrice;
+
+    const extrasString = selectedExtras.map(id => extras.find(e => e.id === id)?.name).join(', ');
+
+    addToCart({
+      id: `${item.id}-${selectedSize}-${selectedExtras.join('-')}`,
+      name: `${item.title} (${sizes.find(s => s.id === selectedSize)?.name})`,
+      price: totalItemPrice,
+      imageUrl: item.imageUrl,
+      imageHint: item.imageHint,
+      extras: extrasString,
+      quantity: quantity,
+    });
+  }
 
   return (
     <div className="relative min-h-screen food-pattern">
@@ -143,7 +166,7 @@ export default function AssortedJollofPage() {
                 <Plus className="h-5 w-5" />
              </Button>
           </div>
-          <Button size="lg" className="flex-grow rounded-full bg-destructive/90 backdrop-blur-sm text-destructive-foreground hover:bg-destructive">
+          <Button size="lg" className="flex-grow rounded-full bg-destructive/90 backdrop-blur-sm text-destructive-foreground hover:bg-destructive" onClick={handleAddToCart}>
             <div className="flex justify-between w-full items-center">
                 <span>Add to cart</span>
                 <span>GHC {calculateTotal().toFixed(2)}</span>
