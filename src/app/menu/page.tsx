@@ -12,11 +12,26 @@ import { Bell, Search, ShoppingCart, Plus, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { useCart } from '@/hooks/use-cart';
 
 const MenuItemCard = ({ item }: { item: food_item }) => {
+    const { addToCart } = useCart();
     const href = item.slug === 'assorted-jollof'
       ? `/food/assorted-jollof`
       : `/food/${item.slug}`;
+      
+    const handleAddToCart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        addToCart({
+            id: item.id,
+            name: item.title,
+            price: item.price,
+            imageUrl: item.imageUrl,
+            imageHint: item.imageHint,
+            quantity: 1,
+        });
+    }
 
     return (
         <Link href={href}>
@@ -34,7 +49,12 @@ const MenuItemCard = ({ item }: { item: food_item }) => {
                     <p className="text-muted-foreground text-sm line-clamp-2">{item.description}</p>
                     <p className="text-destructive font-bold text-base my-2">GHC {item.price.toFixed(2)}</p>
                 </div>
-                <Button size="icon" variant="outline" className="rounded-full h-9 w-9 border-destructive text-destructive hover:bg-destructive/10">
+                <Button 
+                    size="icon" 
+                    variant="outline" 
+                    className="rounded-full h-9 w-9 border-destructive text-destructive hover:bg-destructive/10"
+                    onClick={handleAddToCart}
+                >
                     <Plus className="h-5 w-5" />
                 </Button>
             </div>
@@ -138,3 +158,5 @@ export default function MenuPage() {
         </div>
     );
 }
+
+    

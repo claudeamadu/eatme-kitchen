@@ -1,16 +1,19 @@
 
 'use client';
 
-import { useState } from 'react';
-import { foodItems } from '@/lib/food';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { notFound, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ChevronLeft, Clock, Minus, Plus, Star } from 'lucide-react';
+import { ChevronLeft, Clock, Minus, Plus, Star, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/hooks/use-cart';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import type { food_item } from '@/lib/types';
+
 
 const sizes = [
   { id: 'small', name: 'Small', price: 50 },
@@ -27,14 +30,45 @@ const extras = [
 export default function AssortedJollofPage() {
   const router = useRouter();
   const { addToCart } = useCart();
-  const item = foodItems.find(r => r.slug === 'assorted-jollof');
-  
+  const [item, setItem] = useState<food_item | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [selectedSize, setSelectedSize] = useState('medium');
   const [selectedExtras, setSelectedExtras] = useState<string[]>(['tilapia']);
   const [quantity, setQuantity] = useState(1);
 
+  useEffect(() => {
+    const fetchItem = async () => {
+      try {
+        const q = query(collection(db, "foodItems"), where("slug", "==", 'assorted-jollof'), where("isDeleted", "!=", true));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+          notFound();
+        } else {
+          const doc = querySnapshot.docs[0];
+          setItem({ id: doc.id, ...doc.data() } as food_item);
+        }
+      } catch (error) {
+        console.error("Error fetching food item:", error);
+        notFound();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchItem();
+  }, []);
+
+  if (isLoading) {
+     return (
+      <div className="flex items-center justify-center min-h-screen food-pattern">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   if (!item) {
-    notFound();
+    return notFound();
   }
 
   const handleExtraToggle = (extraId: string) => {
@@ -177,3 +211,5 @@ export default function AssortedJollofPage() {
     </div>
   );
 }
+
+    

@@ -12,6 +12,7 @@ export type food_item = {
   dietary: string[];
   price: number;
   isDeleted?: boolean;
+  createdAt?: Timestamp;
 };
 
 export interface category {
@@ -93,3 +94,5 @@ export interface user {
   phone?: string;
   dob?: string;
 }
+
+    

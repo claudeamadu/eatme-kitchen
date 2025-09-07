@@ -15,6 +15,19 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+function slugify(text: string) {
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/\s+/g, '-')           // Replace spaces with -
+    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+    .replace(/^-+/, '')             // Trim - from start of text
+    .replace(/-+$/, '');            // Trim - from end of text
+}
+
 
 export default function AdminMenuPage() {
     const [activeTab, setActiveTab] = useState('food-items');
@@ -51,7 +64,7 @@ export default function AdminMenuPage() {
     }, []);
 
     const handleOpenFoodItemDialog = (item: food_item | null = null) => {
-        setCurrentFoodItem(item || { title: '', description: '', price: 0, cuisine: '', imageUrl: '', imageHint: '', dietary: [], isDeleted: false });
+        setCurrentFoodItem(item || { title: '', description: '', price: 0, cuisine: '', imageUrl: '', imageHint: '', dietary: [], isDeleted: false, slug: '' });
         setIsFoodItemDialogOpen(true);
     };
     
@@ -61,14 +74,21 @@ export default function AdminMenuPage() {
     };
 
     const handleSaveFoodItem = async () => {
-        if (!currentFoodItem) return;
+        if (!currentFoodItem || !currentFoodItem.title) return;
+        
+        const foodData = {
+            ...currentFoodItem,
+            slug: currentFoodItem.slug || slugify(currentFoodItem.title)
+        };
+
         try {
-            if (currentFoodItem.id) {
-                const { id, ...data } = currentFoodItem;
+            if (foodData.id) {
+                const { id, ...data } = foodData;
                 await updateDoc(doc(db, 'foodItems', id), data);
                 toast({ title: 'Success', description: 'Food item updated.' });
             } else {
-                await addDoc(collection(db, 'foodItems'), { ...currentFoodItem, createdAt: serverTimestamp() });
+                 const { id, ...data } = foodData;
+                await addDoc(collection(db, 'foodItems'), { ...data, createdAt: serverTimestamp() });
                 toast({ title: 'Success', description: 'Food item added.' });
             }
             setIsFoodItemDialogOpen(false);
@@ -107,8 +127,14 @@ export default function AdminMenuPage() {
                 await updateDoc(doc(db, 'foodItems', itemToDelete.id), { isDeleted: true });
                 toast({ title: 'Success', description: 'Food item has been soft deleted.' });
             } else {
-                await deleteDoc(doc(db, 'categories', itemToDelete.id));
-                toast({ title: 'Success', description: 'Category has been deleted.' });
+                // Before deleting category, check if any food item is using it
+                const isCategoryInUse = foodItems.some(item => item.cuisine === categories.find(c => c.id === itemToDelete.id)?.name);
+                if (isCategoryInUse) {
+                    toast({ variant: 'destructive', title: 'Cannot Delete', description: 'This category is still in use by some food items.'});
+                } else {
+                    await deleteDoc(doc(db, 'categories', itemToDelete.id));
+                    toast({ title: 'Success', description: 'Category has been deleted.' });
+                }
             }
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -147,7 +173,7 @@ export default function AdminMenuPage() {
                 <CardContent>
                     {activeTab === 'food-items' ? (
                         <Table>
-                            <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Price</TableHead><TableHead>Cuisine</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Price</TableHead><TableHead>Category</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {foodItems.map(item => (
                                     <TableRow key={item.id} className={item.isDeleted ? 'opacity-50' : ''}>
@@ -184,16 +210,25 @@ export default function AdminMenuPage() {
 
             {/* Food Item Dialog */}
             <Dialog open={isFoodItemDialogOpen} onOpenChange={setIsFoodItemDialogOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-[625px]">
                     <DialogHeader><DialogTitle>{currentFoodItem?.id ? 'Edit' : 'Add'} Food Item</DialogTitle></DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2"><Label>Title</Label><Input value={currentFoodItem?.title} onChange={(e) => setCurrentFoodItem(p => p ? {...p, title: e.target.value} : null)} /></div>
-                        <div className="space-y-2"><Label>Description</Label><Textarea value={currentFoodItem?.description} onChange={(e) => setCurrentFoodItem(p => p ? {...p, description: e.target.value} : null)} /></div>
-                        <div className="space-y-2"><Label>Price</Label><Input type="number" value={currentFoodItem?.price} onChange={(e) => setCurrentFoodItem(p => p ? {...p, price: parseFloat(e.target.value)} : null)} /></div>
-                        <div className="space-y-2"><Label>Cuisine</Label><Input value={currentFoodItem?.cuisine} onChange={(e) => setCurrentFoodItem(p => p ? {...p, cuisine: e.target.value} : null)} /></div>
-                        <div className="space-y-2"><Label>Image URL</Label><Input value={currentFoodItem?.imageUrl} onChange={(e) => setCurrentFoodItem(p => p ? {...p, imageUrl: e.target.value} : null)} /></div>
-                        <div className="space-y-2"><Label>Image Hint</Label><Input value={currentFoodItem?.imageHint} onChange={(e) => setCurrentFoodItem(p => p ? {...p, imageHint: e.target.value} : null)} /></div>
-                        <div className="flex items-center space-x-2"><Switch checked={currentFoodItem?.isDeleted} onCheckedChange={(checked) => setCurrentFoodItem(p => p ? {...p, isDeleted: checked} : null)} /><Label>Mark as Deleted</Label></div>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Title</Label><Input className="col-span-3" value={currentFoodItem?.title} onChange={(e) => setCurrentFoodItem(p => p ? {...p, title: e.target.value} : null)} /></div>
+                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Description</Label><Textarea className="col-span-3" value={currentFoodItem?.description} onChange={(e) => setCurrentFoodItem(p => p ? {...p, description: e.target.value} : null)} /></div>
+                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Price (GHC)</Label><Input type="number" className="col-span-3" value={currentFoodItem?.price} onChange={(e) => setCurrentFoodItem(p => p ? {...p, price: parseFloat(e.target.value) || 0} : null)} /></div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                           <Label className="text-right">Category</Label>
+                           <Select value={currentFoodItem?.cuisine} onValueChange={(value) => setCurrentFoodItem(p => p ? {...p, cuisine: value} : null)}>
+                                <SelectTrigger className="col-span-3"><SelectValue placeholder="Select a category" /></SelectTrigger>
+                                <SelectContent>
+                                    {categories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Image URL</Label><Input className="col-span-3" value={currentFoodItem?.imageUrl} onChange={(e) => setCurrentFoodItem(p => p ? {...p, imageUrl: e.target.value} : null)} /></div>
+                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Image Hint</Label><Input className="col-span-3" value={currentFoodItem?.imageHint} onChange={(e) => setCurrentFoodItem(p => p ? {...p, imageHint: e.target.value} : null)} /></div>
+                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Slug</Label><Input className="col-span-3" value={currentFoodItem?.slug} onChange={(e) => setCurrentFoodItem(p => p ? {...p, slug: e.target.value} : null)} placeholder="auto-generated from title" /></div>
+                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Is Deleted</Label><Switch className="col-span-3" checked={currentFoodItem?.isDeleted} onCheckedChange={(checked) => setCurrentFoodItem(p => p ? {...p, isDeleted: checked} : null)} /></div>
                     </div>
                     <DialogFooter><Button onClick={handleSaveFoodItem}>Save</Button></DialogFooter>
                 </DialogContent>
@@ -205,7 +240,7 @@ export default function AdminMenuPage() {
                     <DialogHeader><DialogTitle>{currentCategory?.id ? 'Edit' : 'Add'} Category</DialogTitle></DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2"><Label>Name</Label><Input value={currentCategory?.name} onChange={(e) => setCurrentCategory(p => p ? {...p, name: e.target.value} : null)} /></div>
-                        <div className="space-y-2"><Label>Image URL</Label><Input value={currentCategory?.image} onChange={(e) => setCurrentCategory(p => p ? {...p, image: e.target.value} : null)} /></div>
+                        <div className="space-y-2"><Label>Image URL</Label><Input value={currentCategory?.image} onChange={(e) => setCurrentCategory(p => p ? {...p, image: e.target.value} : null)} placeholder="For display in category list" /></div>
                     </div>
                     <DialogFooter><Button onClick={handleSaveCategory}>Save</Button></DialogFooter>
                 </DialogContent>
@@ -229,3 +264,5 @@ export default function AdminMenuPage() {
         </>
     );
 }
+
+    

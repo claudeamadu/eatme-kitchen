@@ -1,28 +1,66 @@
 
 'use client';
 
-import { useState } from 'react';
-import { foodItems } from '@/lib/food';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { notFound, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Minus, Plus, Star, Clock } from 'lucide-react';
+import { ChevronLeft, Minus, Plus, Star, Clock, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/hooks/use-cart';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, DocumentData } from 'firebase/firestore';
+import type { food_item } from '@/lib/types';
 
 
 export default function FoodPage({ params }: { params: { slug: string } }) {
   const router = useRouter();
   const { addToCart } = useCart();
-  const item = foodItems.find(r => r.slug === params.slug);
+  const [item, setItem] = useState<food_item | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
 
-  if (!item) {
-    notFound();
+  useEffect(() => {
+    const fetchItem = async () => {
+      if (params.slug === 'assorted-jollof') {
+        // This specific slug has a custom page, so we can redirect or handle as needed.
+        // For this case, we'll let it 404 since the custom page exists.
+        setIsLoading(false);
+        notFound();
+        return;
+      }
+      
+      try {
+        const q = query(collection(db, "foodItems"), where("slug", "==", params.slug), where("isDeleted", "!=", true));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+          notFound();
+        } else {
+          const doc = querySnapshot.docs[0];
+          setItem({ id: doc.id, ...doc.data() } as food_item);
+        }
+      } catch (error) {
+        console.error("Error fetching food item:", error);
+        notFound();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchItem();
+  }, [params.slug]);
+
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen food-pattern">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
   }
-  
-  if (item.slug === 'assorted-jollof') {
-    notFound();
+
+  if (!item) {
+    return notFound();
   }
 
   const price = item.price;
@@ -77,7 +115,7 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
           
             <div className="flex flex-wrap gap-2">
                 <Badge variant="secondary">{item.cuisine}</Badge>
-                {item.dietary.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+                {item.dietary?.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
             </div>
         </div>
       </div>
@@ -104,3 +142,5 @@ export default function FoodPage({ params }: { params: { slug: string } }) {
     </div>
   );
 }
+
+    
