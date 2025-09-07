@@ -1,7 +1,7 @@
 import { RecipeGrid } from '@/components/recipe-grid';
 import { recipes } from '@/lib/recipes';
 
-export default function Home() {
+export default function HomePage() {
   return (
     <section className="container mx-auto px-4 py-8">
       <div className="text-center py-12">

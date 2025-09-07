@@ -15,7 +15,7 @@ export default function FavoritesPage() {
   if (!isLoaded) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-headline font-bold mb-8">My Favorites</h1>
+        <h1 className="text-4xl font-headline font-bold mb-8 text-center">My Favorites</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="bg-card p-4 rounded-lg shadow-sm animate-pulse h-96" />
@@ -27,7 +27,7 @@ export default function FavoritesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-headline font-bold mb-8">My Favorites</h1>
+      <h1 className="text-4xl font-headline font-bold mb-8 text-center">My Favorites</h1>
       {favoriteRecipes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {favoriteRecipes.map((recipe) => (
@@ -41,7 +41,7 @@ export default function FavoritesPage() {
           <p className="text-muted-foreground mt-2 mb-6 max-w-sm">
             You haven't saved any favorite recipes. Start exploring and add some!
           </p>
-          <Link href="/" passHref>
+          <Link href="/menu" passHref>
             <Button size="lg">Discover Recipes</Button>
           </Link>
         </div>

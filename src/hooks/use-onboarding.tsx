@@ -3,7 +3,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import OnboardingPage from '@/app/onboarding/page';
-import Header from '@/components/layout/header'; // Corrected import
+import BottomNav from '@/components/layout/bottom-nav';
 
 const ONBOARDING_KEY = 'eatme-onboarding-complete';
 
@@ -20,14 +20,14 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative flex min-h-screen flex-col">
-      {!isAuthPage && <Header />}
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-20">{children}</main>
+      {!isAuthPage && <BottomNav />}
     </div>
   );
 }
 
 export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const pathname = usePathname();
 
@@ -55,10 +55,16 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
 
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup');
 
+  const value = { hasCompletedOnboarding, completeOnboarding };
+
   return (
-    <OnboardingContext.Provider value={{ hasCompletedOnboarding, completeOnboarding }}>
-      {showOnboarding ? <OnboardingPage /> : (
-        isAuthPage ? children : <AppLayout>{children}</AppLayout>
+    <OnboardingContext.Provider value={value}>
+      {showOnboarding ? (
+        <OnboardingPage />
+      ) : isAuthPage ? (
+        children
+      ) : (
+        <AppLayout>{children}</AppLayout>
       )}
     </OnboardingContext.Provider>
   );
