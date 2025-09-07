@@ -44,7 +44,7 @@ export default function ReservationDetailsPage() {
             </main>
 
              <div className="fixed bottom-0 left-0 right-0 p-4">
-                <Link href="/reservation/confirmation" passHref>
+                <Link href="/reservation/summary" passHref>
                     <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14">
                         Continue
                     </Button>
