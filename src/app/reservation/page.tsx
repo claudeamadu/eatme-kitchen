@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 const durationOptions = ['1hr', '2hrs', '3hrs', '4hrs', '5hrs', 'All Day'];
 const guestOptions = ['2-4 guests', '5-8 guests', '9-15 guests', 'All Day'];
@@ -175,9 +176,11 @@ export default function ReservationPage() {
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 p-4">
-        <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14">
-          Reserve Table
-        </Button>
+        <Link href="/reservation/details" passHref>
+          <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14">
+            Reserve Table
+          </Button>
+        </Link>
       </div>
     </div>
   );
