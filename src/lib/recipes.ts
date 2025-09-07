@@ -1,0 +1,127 @@
+export type Recipe = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  imageHint: string;
+  cuisine: string;
+  dietary: string[];
+  ingredients: string[];
+  instructions: string[];
+  nutrition: {
+    calories: string;
+    protein: string;
+    carbs: string;
+    fat: string;
+  };
+};
+
+export const recipes: Recipe[] = [
+  {
+    id: '1',
+    slug: 'spaghetti-carbonara',
+    title: 'Classic Spaghetti Carbonara',
+    description: 'A creamy and delicious Italian pasta dish made with eggs, cheese, pancetta, and pepper.',
+    imageUrl: 'https://picsum.photos/600/400',
+    imageHint: 'pasta carbonara',
+    cuisine: 'Italian',
+    dietary: [],
+    ingredients: [
+      '200g spaghetti',
+      '100g pancetta or guanciale, diced',
+      '2 large eggs',
+      '50g Pecorino Romano cheese, grated',
+      '50g Parmesan cheese, grated',
+      '2 cloves garlic, minced',
+      'Black pepper',
+      'Salt to taste',
+    ],
+    instructions: [
+      'Cook spaghetti according to package directions. Reserve 1 cup of pasta water.',
+      'While pasta is cooking, fry pancetta in a large skillet over medium heat until crisp. Add garlic and cook for 1 minute more.',
+      'In a bowl, whisk eggs and cheeses. Season with black pepper.',
+      'Drain pasta and add to the skillet with pancetta. Turn off heat.',
+      'Pour egg and cheese mixture over the pasta, stirring quickly. Add a splash of reserved pasta water to create a creamy sauce. Do not scramble the eggs.',
+      'Serve immediately with more grated cheese and black pepper.',
+    ],
+    nutrition: {
+      calories: '600 kcal',
+      protein: '30g',
+      carbs: '65g',
+      fat: '25g',
+    },
+  },
+  {
+    id: '2',
+    slug: 'avocado-toast',
+    title: 'Simple Avocado Toast',
+    description: 'A quick, healthy, and satisfying breakfast or snack. Perfectly ripe avocado on toasted artisan bread.',
+    imageUrl: 'https://picsum.photos/600/400',
+    imageHint: 'avocado toast',
+    cuisine: 'Modern',
+    dietary: ['Vegetarian', 'Vegan'],
+    ingredients: [
+      '2 slices of artisan bread (sourdough or whole wheat)',
+      '1 ripe avocado',
+      '1/2 lemon, juiced',
+      'Red pepper flakes to taste',
+      'Salt and freshly ground black pepper to taste',
+      'Optional: cherry tomatoes, feta cheese, or a poached egg',
+    ],
+    instructions: [
+      'Toast the bread slices to your desired level of crispness.',
+      'While the bread is toasting, halve the avocado, remove the pit, and scoop the flesh into a bowl.',
+      'Mash the avocado with a fork. Mix in the lemon juice, salt, and pepper.',
+      'Spread the mashed avocado evenly on the toasted bread slices.',
+      'Sprinkle with red pepper flakes and any other optional toppings.',
+      'Serve immediately and enjoy.',
+    ],
+    nutrition: {
+      calories: '350 kcal',
+      protein: '10g',
+      carbs: '40g',
+      fat: '20g',
+    },
+  },
+  {
+    id: '3',
+    slug: 'chicken-curry',
+    title: 'Easy Chicken Curry',
+    description: 'A flavorful and aromatic chicken curry that comes together in under an hour. Perfect for a weeknight dinner.',
+    imageUrl: 'https://picsum.photos/600/400',
+    imageHint: 'chicken curry',
+    cuisine: 'Indian',
+    dietary: ['Gluten-Free'],
+    ingredients: [
+      '1 tbsp coconut oil',
+      '1 large onion, chopped',
+      '2 cloves garlic, minced',
+      '1 tbsp ginger, grated',
+      '2 tbsp curry powder',
+      '1 tsp turmeric',
+      '500g chicken breast, cut into bite-sized pieces',
+      '1 can (400ml) coconut milk',
+      '1 can (400g) diced tomatoes',
+      'Salt and pepper to taste',
+      'Fresh cilantro for garnish',
+      'Cooked rice for serving',
+    ],
+    instructions: [
+      'Heat coconut oil in a large pot or Dutch oven over medium heat. Add onion and cook until soft, about 5 minutes.',
+      'Add garlic and ginger, and cook for 1 minute until fragrant.',
+      'Stir in curry powder and turmeric, and cook for another minute.',
+      'Add the chicken pieces and cook until lightly browned on all sides.',
+      'Pour in the coconut milk and diced tomatoes. Stir everything together and bring to a simmer.',
+      'Reduce heat, cover, and let it cook for 15-20 minutes, or until the chicken is cooked through and the sauce has thickened.',
+      'Season with salt and pepper to taste.',
+      'Serve hot over rice, garnished with fresh cilantro.',
+    ],
+    nutrition: {
+      calories: '450 kcal',
+      protein: '35g',
+      carbs: '20g',
+      fat: '25g',
+    },
+  },
+];
