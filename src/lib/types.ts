@@ -1,6 +1,18 @@
 
 import { Timestamp } from 'firebase/firestore';
 
+export interface food_size {
+  name: string;
+  price: number;
+}
+
+export interface food_extra {
+  name: string;
+  price: number;
+  image?: string;
+  hint?: string;
+}
+
 export type food_item = {
   id: string;
   title: string;
@@ -9,10 +21,11 @@ export type food_item = {
   imageHint: string;
   cuisine: string;
   dietary: string[];
-  price: number;
-  slug?: string; // Optional for backward compatibility, but not used for routing
+  price: number; // Base price for non-customizable items
   isDeleted?: boolean;
   createdAt?: Timestamp;
+  sizes?: food_size[];
+  extras?: food_extra[];
 };
 
 export interface category {
@@ -94,5 +107,3 @@ export interface user {
   phone?: string;
   dob?: string;
 }
-
-    

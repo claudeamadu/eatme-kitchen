@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import type { food_item, category } from '@/lib/types';
+import type { food_item, category, food_size, food_extra } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,18 +16,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-function slugify(text: string) {
-  return text
-    .toString()
-    .toLowerCase()
-    .replace(/\s+/g, '-')           // Replace spaces with -
-    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
-    .replace(/^-+/, '')             // Trim - from start of text
-    .replace(/-+$/, '');            // Trim - from end of text
-}
-
 
 export default function AdminMenuPage() {
     const [activeTab, setActiveTab] = useState('food-items');
@@ -64,7 +52,7 @@ export default function AdminMenuPage() {
     }, []);
 
     const handleOpenFoodItemDialog = (item: food_item | null = null) => {
-        setCurrentFoodItem(item || { title: '', description: '', price: 0, cuisine: '', imageUrl: '', imageHint: '', dietary: [], isDeleted: false, slug: '' });
+        setCurrentFoodItem(item || { title: '', description: '', price: 0, cuisine: '', imageUrl: '', imageHint: '', dietary: [], isDeleted: false, sizes: [], extras: [] });
         setIsFoodItemDialogOpen(true);
     };
     
@@ -76,10 +64,7 @@ export default function AdminMenuPage() {
     const handleSaveFoodItem = async () => {
         if (!currentFoodItem || !currentFoodItem.title) return;
         
-        const foodData = {
-            ...currentFoodItem,
-            slug: currentFoodItem.slug || slugify(currentFoodItem.title)
-        };
+        const foodData = { ...currentFoodItem };
 
         try {
             if (foodData.id) {
@@ -127,7 +112,6 @@ export default function AdminMenuPage() {
                 await updateDoc(doc(db, 'foodItems', itemToDelete.id), { isDeleted: true });
                 toast({ title: 'Success', description: 'Food item has been soft deleted.' });
             } else {
-                // Before deleting category, check if any food item is using it
                 const isCategoryInUse = foodItems.some(item => item.cuisine === categories.find(c => c.id === itemToDelete.id)?.name);
                 if (isCategoryInUse) {
                     toast({ variant: 'destructive', title: 'Cannot Delete', description: 'This category is still in use by some food items.'});
@@ -142,6 +126,33 @@ export default function AdminMenuPage() {
             setIsDeleteDialogOpen(false);
             setItemToDelete(null);
         }
+    };
+
+    // Handlers for dynamic fields
+    const handleFoodItemChange = (field: keyof food_item, value: any) => {
+        setCurrentFoodItem(p => p ? { ...p, [field]: value } : null);
+    };
+
+    const handleDynamicFieldChange = (type: 'sizes' | 'extras', index: number, field: keyof food_size | keyof food_extra, value: any) => {
+        if (!currentFoodItem) return;
+        const updatedFields = [...(currentFoodItem[type] || [])];
+        if (updatedFields[index]) {
+            (updatedFields[index] as any)[field] = value;
+            handleFoodItemChange(type, updatedFields);
+        }
+    };
+
+    const addDynamicField = (type: 'sizes' | 'extras') => {
+        if (!currentFoodItem) return;
+        const newField = type === 'sizes' ? { name: '', price: 0 } : { name: '', price: 0 };
+        handleFoodItemChange(type, [...(currentFoodItem[type] || []), newField]);
+    };
+
+    const removeDynamicField = (type: 'sizes' | 'extras', index: number) => {
+        if (!currentFoodItem) return;
+        const updatedFields = [...(currentFoodItem[type] || [])];
+        updatedFields.splice(index, 1);
+        handleFoodItemChange(type, updatedFields);
     };
 
 
@@ -210,25 +221,52 @@ export default function AdminMenuPage() {
 
             {/* Food Item Dialog */}
             <Dialog open={isFoodItemDialogOpen} onOpenChange={setIsFoodItemDialogOpen}>
-                <DialogContent className="sm:max-w-[625px]">
+                <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader><DialogTitle>{currentFoodItem?.id ? 'Edit' : 'Add'} Food Item</DialogTitle></DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Title</Label><Input className="col-span-3" value={currentFoodItem?.title} onChange={(e) => setCurrentFoodItem(p => p ? {...p, title: e.target.value} : null)} /></div>
-                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Description</Label><Textarea className="col-span-3" value={currentFoodItem?.description} onChange={(e) => setCurrentFoodItem(p => p ? {...p, description: e.target.value} : null)} /></div>
-                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Price (GHC)</Label><Input type="number" className="col-span-3" value={currentFoodItem?.price} onChange={(e) => setCurrentFoodItem(p => p ? {...p, price: parseFloat(e.target.value) || 0} : null)} /></div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                           <Label className="text-right">Category</Label>
-                           <Select value={currentFoodItem?.cuisine} onValueChange={(value) => setCurrentFoodItem(p => p ? {...p, cuisine: value} : null)}>
-                                <SelectTrigger className="col-span-3"><SelectValue placeholder="Select a category" /></SelectTrigger>
-                                <SelectContent>
-                                    {categories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                    <div className="grid gap-6 py-4">
+                        {/* Basic Info */}
+                        <div className="space-y-4 border-b pb-6">
+                            <h3 className="text-lg font-medium">Basic Information</h3>
+                            <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Title</Label><Input className="col-span-3" value={currentFoodItem?.title} onChange={(e) => handleFoodItemChange('title', e.target.value)} /></div>
+                            <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Description</Label><Textarea className="col-span-3" value={currentFoodItem?.description} onChange={(e) => handleFoodItemChange('description', e.target.value)} /></div>
+                            <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Base Price (GHC)</Label><Input type="number" className="col-span-3" value={currentFoodItem?.price} onChange={(e) => handleFoodItemChange('price', parseFloat(e.target.value) || 0)} /></div>
+                            <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Category</Label><Select value={currentFoodItem?.cuisine} onValueChange={(value) => handleFoodItemChange('cuisine', value)}><SelectTrigger className="col-span-3"><SelectValue placeholder="Select a category" /></SelectTrigger><SelectContent>{categories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}</SelectContent></Select></div>
+                            <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Image URL</Label><Input className="col-span-3" value={currentFoodItem?.imageUrl} onChange={(e) => handleFoodItemChange('imageUrl', e.target.value)} /></div>
+                            <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Image Hint</Label><Input className="col-span-3" value={currentFoodItem?.imageHint} onChange={(e) => handleFoodItemChange('imageHint', e.target.value)} /></div>
+                            <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Is Deleted</Label><Switch className="justify-self-start" checked={currentFoodItem?.isDeleted} onCheckedChange={(checked) => handleFoodItemChange('isDeleted', checked)} /></div>
                         </div>
-                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Image URL</Label><Input className="col-span-3" value={currentFoodItem?.imageUrl} onChange={(e) => setCurrentFoodItem(p => p ? {...p, imageUrl: e.target.value} : null)} /></div>
-                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Image Hint</Label><Input className="col-span-3" value={currentFoodItem?.imageHint} onChange={(e) => setCurrentFoodItem(p => p ? {...p, imageHint: e.target.value} : null)} /></div>
-                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Slug</Label><Input className="col-span-3" value={currentFoodItem?.slug} onChange={(e) => setCurrentFoodItem(p => p ? {...p, slug: e.target.value} : null)} placeholder="auto-generated from title" /></div>
-                        <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Is Deleted</Label><Switch className="col-span-3" checked={currentFoodItem?.isDeleted} onCheckedChange={(checked) => setCurrentFoodItem(p => p ? {...p, isDeleted: checked} : null)} /></div>
+
+                        {/* Sizes Section */}
+                        <div className="space-y-4 border-b pb-6">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-lg font-medium">Sizes</h3>
+                                <Button type="button" variant="outline" size="sm" onClick={() => addDynamicField('sizes')}><PlusCircle className="mr-2 h-4 w-4" /> Add Size</Button>
+                            </div>
+                             <p className="text-sm text-muted-foreground">Add sizes if this item is customizable. If not, the base price will be used.</p>
+                            {currentFoodItem?.sizes?.map((size, index) => (
+                                <div key={index} className="grid grid-cols-12 items-center gap-2">
+                                    <Input placeholder="Size Name (e.g. Medium)" className="col-span-6" value={size.name} onChange={(e) => handleDynamicFieldChange('sizes', index, 'name', e.target.value)} />
+                                    <Input type="number" placeholder="Price" className="col-span-4" value={size.price} onChange={(e) => handleDynamicFieldChange('sizes', index, 'price', parseFloat(e.target.value) || 0)} />
+                                    <Button type="button" variant="ghost" size="icon" className="col-span-2 text-destructive" onClick={() => removeDynamicField('sizes', index)}><Trash2 className="h-4 w-4" /></Button>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Extras Section */}
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-lg font-medium">Extras</h3>
+                                <Button type="button" variant="outline" size="sm" onClick={() => addDynamicField('extras')}><PlusCircle className="mr-2 h-4 w-4" /> Add Extra</Button>
+                            </div>
+                            <p className="text-sm text-muted-foreground">Add optional extras for this item.</p>
+                            {currentFoodItem?.extras?.map((extra, index) => (
+                                <div key={index} className="grid grid-cols-12 items-center gap-2">
+                                    <Input placeholder="Extra Name (e.g. Grilled Chicken)" className="col-span-6" value={extra.name} onChange={(e) => handleDynamicFieldChange('extras', index, 'name', e.target.value)} />
+                                    <Input type="number" placeholder="Price" className="col-span-4" value={extra.price} onChange={(e) => handleDynamicFieldChange('extras', index, 'price', parseFloat(e.target.value) || 0)} />
+                                    <Button type="button" variant="ghost" size="icon" className="col-span-2 text-destructive" onClick={() => removeDynamicField('extras', index)}><Trash2 className="h-4 w-4" /></Button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                     <DialogFooter><Button onClick={handleSaveFoodItem}>Save</Button></DialogFooter>
                 </DialogContent>
@@ -264,5 +302,3 @@ export default function AdminMenuPage() {
         </>
     );
 }
-
-    

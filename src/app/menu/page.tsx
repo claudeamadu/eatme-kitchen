@@ -18,9 +18,20 @@ const MenuItemCard = ({ item }: { item: food_item }) => {
     const { addToCart } = useCart();
     const href = `/food/${item.id}`;
       
+    const isCustomizable = !!(item.sizes?.length || item.extras?.length);
+
     const handleAddToCart = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
+        
+        if (isCustomizable) {
+            // If it's customizable, we should navigate to the detail page
+            // so the user can select options. A Link wrapper already handles this.
+            // But if for some reason a plus button is shown, we can navigate them.
+            // For now, the button is hidden for customizable items.
+            return;
+        }
+
         addToCart({
             id: item.id,
             name: item.title,
@@ -30,9 +41,6 @@ const MenuItemCard = ({ item }: { item: food_item }) => {
             quantity: 1,
         });
     }
-
-    // Special ID for the customizable jollof
-    const ASSORTED_JOLLOF_ID = 'GhvGkY449paAMH5V02jL';
 
     return (
         <Link href={href}>
@@ -50,7 +58,7 @@ const MenuItemCard = ({ item }: { item: food_item }) => {
                     <p className="text-muted-foreground text-sm line-clamp-2">{item.description}</p>
                     <p className="text-destructive font-bold text-base my-2">GHC {item.price.toFixed(2)}</p>
                 </div>
-                {item.id !== ASSORTED_JOLLOF_ID && (
+                {!isCustomizable && (
                     <Button 
                         size="icon" 
                         variant="outline" 

@@ -15,21 +15,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import type { food_item } from '@/lib/types';
 
 
-const sizes = [
-  { id: 'small', name: 'Small', price: 50 },
-  { id: 'medium', name: 'Medium', price: 90 },
-  { id: 'large', name: 'Large', price: 120 },
-];
-
-const extras = [
-  { id: 'grilled-chicken', name: 'Grilled Chicken', price: 15, image: 'https://picsum.photos/100/100?random=31', hint: 'grilled chicken' },
-  { id: 'fried-chicken', name: 'Fried Chicken', price: 10, image: 'https://picsum.photos/100/100?random=32', hint: 'fried chicken' },
-  { id: 'tilapia', name: 'Tilapia', price: 10, image: 'https://picsum.photos/100/100?random=33', hint: 'tilapia fish' },
-];
-
-// This is the known ID for the special Assorted Jollof item.
-const ASSORTED_JOLLOF_ID = 'GhvGkY449paAMH5V02jL';
-
 export default function FoodPage() {
   const router = useRouter();
   const params = useParams();
@@ -38,11 +23,11 @@ export default function FoodPage() {
   const [item, setItem] = useState<food_item | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [selectedSize, setSelectedSize] = useState('medium');
-  const [selectedExtras, setSelectedExtras] = useState<string[]>(['tilapia']);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   
-  const isCustomizable = id === ASSORTED_JOLLOF_ID;
+  const isCustomizable = !!(item?.sizes?.length || item?.extras?.length);
 
   useEffect(() => {
     if (!id || typeof id !== 'string') return;
@@ -54,7 +39,11 @@ export default function FoodPage() {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists() && !docSnap.data().isDeleted) {
-          setItem({ id: docSnap.id, ...docSnap.data() } as food_item);
+          const fetchedItem = { id: docSnap.id, ...docSnap.data() } as food_item;
+          setItem(fetchedItem);
+          if (fetchedItem.sizes && fetchedItem.sizes.length > 0) {
+            setSelectedSize(fetchedItem.sizes[0].name);
+          }
         } else {
           notFound();
         }
@@ -81,11 +70,11 @@ export default function FoodPage() {
     return notFound();
   }
 
-  const handleExtraToggle = (extraId: string) => {
+  const handleExtraToggle = (extraName: string) => {
     setSelectedExtras(prev => 
-      prev.includes(extraId) 
-        ? prev.filter(id => id !== extraId) 
-        : [...prev, extraId]
+      prev.includes(extraName) 
+        ? prev.filter(name => name !== extraName) 
+        : [...prev, extraName]
     );
   };
 
@@ -93,30 +82,26 @@ export default function FoodPage() {
     if (!isCustomizable) {
         return item.price * quantity;
     }
-    const sizePrice = sizes.find(s => s.id === selectedSize)?.price || 0;
-    const extrasPrice = selectedExtras.reduce((total, extraId) => {
-      const extra = extras.find(e => e.id === extraId);
+    const basePrice = item.sizes?.find(s => s.name === selectedSize)?.price || item.price || 0;
+    
+    const extrasPrice = selectedExtras.reduce((total, extraName) => {
+      const extra = item.extras?.find(e => e.name === extraName);
       return total + (extra?.price || 0);
     }, 0);
-    return (sizePrice + extrasPrice) * quantity;
+    return (basePrice + extrasPrice) * quantity;
   };
   
   const handleAddToCart = () => {
     if (!item) return;
     
     if (isCustomizable) {
-        const sizePrice = sizes.find(s => s.id === selectedSize)?.price || 0;
-        const extrasPrice = selectedExtras.reduce((total, extraId) => {
-          const extra = extras.find(e => e.id === extraId);
-          return total + (extra?.price || 0);
-        }, 0);
-        const totalItemPrice = sizePrice + extrasPrice;
-
-        const extrasString = selectedExtras.map(id => extras.find(e => e.id === id)?.name).join(', ');
+        const totalItemPrice = calculateTotal() / quantity;
+        const extrasString = selectedExtras.join(', ');
+        const cartItemName = selectedSize ? `${item.title} (${selectedSize})` : item.title;
 
         addToCart({
           id: `${item.id}-${selectedSize}-${selectedExtras.join('-')}`,
-          name: `${item.title} (${sizes.find(s => s.id === selectedSize)?.name})`,
+          name: cartItemName,
           price: totalItemPrice,
           imageUrl: item.imageUrl,
           imageHint: item.imageHint,
@@ -174,51 +159,51 @@ export default function FoodPage() {
             <p className="text-2xl font-bold text-destructive mb-6">GHC {item.price.toFixed(2)}</p>
           )}
 
-          {isCustomizable && (
-            <>
-              <section className="mb-6">
-                <h2 className="text-xl font-bold font-headline mb-3">Available Sizes</h2>
-                <RadioGroup value={selectedSize} onValueChange={setSelectedSize} className="grid grid-cols-3 gap-3">
-                  {sizes.map(size => (
-                    <div key={size.id}>
-                      <RadioGroupItem value={size.id} id={size.id} className="peer sr-only" />
-                      <Label htmlFor={size.id} className={cn(
-                        "flex flex-col items-center justify-center rounded-xl p-3 border-2 border-transparent transition-all",
-                        "peer-data-[state=unchecked]:bg-card peer-data-[state=unchecked]:shadow-sm",
-                        "peer-data-[state=checked]:bg-destructive peer-data-[state=checked]:text-destructive-foreground"
-                      )}>
-                        <span className="font-bold">{size.name}</span>
-                        <span className="text-sm">GHC {size.price}</span>
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </section>
+          {item.sizes && item.sizes.length > 0 && (
+            <section className="mb-6">
+              <h2 className="text-xl font-bold font-headline mb-3">Available Sizes</h2>
+              <RadioGroup value={selectedSize || ''} onValueChange={setSelectedSize} className="grid grid-cols-3 gap-3">
+                {item.sizes.map(size => (
+                  <div key={size.name}>
+                    <RadioGroupItem value={size.name} id={size.name} className="peer sr-only" />
+                    <Label htmlFor={size.name} className={cn(
+                      "flex flex-col items-center justify-center rounded-xl p-3 border-2 border-transparent transition-all cursor-pointer",
+                      "peer-data-[state=unchecked]:bg-card peer-data-[state=unchecked]:shadow-sm",
+                      "peer-data-[state=checked]:bg-destructive peer-data-[state=checked]:text-destructive-foreground"
+                    )}>
+                      <span className="font-bold">{size.name}</span>
+                      <span className="text-sm">GHC {size.price}</span>
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </section>
+          )}
 
-              <section>
-                <h2 className="text-xl font-bold font-headline mb-3">Extras</h2>
-                <div className="grid grid-cols-3 gap-3">
-                  {extras.map(extra => (
-                    <div key={extra.id} onClick={() => handleExtraToggle(extra.id)}
-                      className={cn("rounded-xl border-2 p-2 text-center cursor-pointer transition-all",
-                        selectedExtras.includes(extra.id) ? 'border-destructive bg-destructive/10' : 'border-transparent bg-card shadow-sm'
-                      )}
-                    >
-                      <div className="relative">
-                        <Image src={extra.image} alt={extra.name} width={80} height={80} data-ai-hint={extra.hint} className="w-full h-20 object-cover rounded-md mb-2"/>
-                        <div className={cn("absolute top-2 right-2 h-5 w-5 rounded-full border-2 bg-card flex items-center justify-center",
-                            selectedExtras.includes(extra.id) ? 'border-destructive' : 'border-muted-foreground/30'
-                        )}>
-                            {selectedExtras.includes(extra.id) && <div className="h-2.5 w-2.5 rounded-full bg-destructive" />}
-                        </div>
+          {item.extras && item.extras.length > 0 && (
+            <section>
+              <h2 className="text-xl font-bold font-headline mb-3">Extras</h2>
+              <div className="grid grid-cols-3 gap-3">
+                {item.extras.map(extra => (
+                  <div key={extra.name} onClick={() => handleExtraToggle(extra.name)}
+                    className={cn("rounded-xl border-2 p-2 text-center cursor-pointer transition-all",
+                      selectedExtras.includes(extra.name) ? 'border-destructive bg-destructive/10' : 'border-transparent bg-card shadow-sm'
+                    )}
+                  >
+                    <div className="relative">
+                      <Image src={extra.image || "https://picsum.photos/100/100"} alt={extra.name} width={80} height={80} data-ai-hint={extra.hint || 'food extra'} className="w-full h-20 object-cover rounded-md mb-2"/>
+                      <div className={cn("absolute top-2 right-2 h-5 w-5 rounded-full border-2 bg-card flex items-center justify-center",
+                          selectedExtras.includes(extra.name) ? 'border-destructive' : 'border-muted-foreground/30'
+                      )}>
+                          {selectedExtras.includes(extra.name) && <div className="h-2.5 w-2.5 rounded-full bg-destructive" />}
                       </div>
-                      <p className="font-semibold text-sm">{extra.name}</p>
-                       <p className={cn("font-bold text-xs", selectedExtras.includes(extra.id) ? "text-destructive": "text-muted-foreground")}>GHC {extra.price}</p>
                     </div>
-                  ))}
-                </div>
-              </section>
-            </>
+                    <p className="font-semibold text-sm">{extra.name}</p>
+                     <p className={cn("font-bold text-xs", selectedExtras.includes(extra.name) ? "text-destructive": "text-muted-foreground")}>GHC {extra.price}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
           )}
         </div>
       </div>
