@@ -3,7 +3,6 @@ import { Timestamp } from 'firebase/firestore';
 
 export type food_item = {
   id: string;
-  slug: string;
   title: string;
   description: string;
   imageUrl: string;
@@ -11,6 +10,7 @@ export type food_item = {
   cuisine: string;
   dietary: string[];
   price: number;
+  slug?: string; // Optional for backward compatibility, but not used for routing
   isDeleted?: boolean;
   createdAt?: Timestamp;
 };
