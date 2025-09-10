@@ -7,7 +7,7 @@ import { notFound, useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ChevronLeft, Clock, Minus, Plus, Star, Loader2 } from 'lucide-react';
+import { ChevronLeft, Clock, Minus, Plus, Star, Loader2, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/hooks/use-cart';
 import { db } from '@/lib/firebase';
@@ -130,12 +130,17 @@ export default function ItemPage() {
           className="object-cover"
           data-ai-hint={item.imageHint}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
       </div>
       
       <div className="absolute top-5 left-4 z-10">
         <Button size="icon" variant="ghost" className="rounded-full bg-white/80 hover:bg-white backdrop-blur-sm" onClick={() => router.back()}>
           <ChevronLeft className="h-6 w-6" />
+        </Button>
+      </div>
+       <div className="absolute top-5 right-4 z-10">
+        <Button size="icon" variant="ghost" className="rounded-full bg-white/80 hover:bg-white backdrop-blur-sm">
+          <Heart className="h-6 w-6 text-destructive" />
         </Button>
       </div>
 
@@ -172,7 +177,7 @@ export default function ItemPage() {
                       "peer-data-[state=checked]:bg-destructive peer-data-[state=checked]:text-destructive-foreground"
                     )}>
                       <span className="font-bold">{size.name}</span>
-                      <span className="text-sm">GHC {size.price}</span>
+                      <span className="text-sm">GHC {size.price.toFixed(2)}</span>
                     </Label>
                   </div>
                 ))}
@@ -187,19 +192,19 @@ export default function ItemPage() {
                 {item.extras.map(extra => (
                   <div key={extra.name} onClick={() => handleExtraToggle(extra.name)}
                     className={cn("rounded-xl border-2 p-2 text-center cursor-pointer transition-all",
-                      selectedExtras.includes(extra.name) ? 'border-destructive bg-destructive/10' : 'border-transparent bg-card shadow-sm'
+                      selectedExtras.includes(extra.name) ? 'border-destructive bg-destructive/5' : 'border-transparent bg-card shadow-sm'
                     )}
                   >
                     <div className="relative">
                       <Image src={extra.image || "https://picsum.photos/100/100"} alt={extra.name} width={80} height={80} data-ai-hint={extra.hint || 'food extra'} className="w-full h-20 object-cover rounded-md mb-2"/>
-                      <div className={cn("absolute top-2 right-2 h-5 w-5 rounded-full border-2 bg-card flex items-center justify-center",
+                      <div className={cn("absolute top-1 right-1 h-5 w-5 rounded-full border-2 bg-card flex items-center justify-center",
                           selectedExtras.includes(extra.name) ? 'border-destructive' : 'border-muted-foreground/30'
                       )}>
                           {selectedExtras.includes(extra.name) && <div className="h-2.5 w-2.5 rounded-full bg-destructive" />}
                       </div>
                     </div>
                     <p className="font-semibold text-sm">{extra.name}</p>
-                     <p className={cn("font-bold text-xs", selectedExtras.includes(extra.name) ? "text-destructive": "text-muted-foreground")}>GHC {extra.price}</p>
+                     <p className={cn("font-bold text-xs", selectedExtras.includes(extra.name) ? "text-destructive": "text-muted-foreground")}>GHC {extra.price.toFixed(2)}</p>
                   </div>
                 ))}
               </div>
@@ -209,17 +214,17 @@ export default function ItemPage() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-transparent p-4">
-        <div className="container mx-auto flex items-center justify-between gap-2 max-w-md">
-          <div className="flex items-center gap-2 rounded-full bg-destructive/90 p-1 text-destructive-foreground backdrop-blur-sm">
-             <Button size="icon" variant="ghost" className="rounded-full hover:bg-destructive-foreground/20" onClick={() => setQuantity(q => Math.max(1, q-1))}>
+        <div className="container mx-auto flex items-center justify-between gap-2 max-w-md bg-card rounded-full p-2 shadow-lg">
+          <div className="flex items-center gap-2 rounded-full bg-primary/10 p-1 text-primary">
+             <Button size="icon" variant="ghost" className="rounded-full hover:bg-primary/20" onClick={() => setQuantity(q => Math.max(1, q-1))}>
                 <Minus className="h-5 w-5" />
              </Button>
              <span className="font-bold text-lg w-5 text-center">{quantity}</span>
-             <Button size="icon" variant="ghost" className="rounded-full hover:bg-destructive-foreground/20" onClick={() => setQuantity(q => q+1)}>
+             <Button size="icon" variant="ghost" className="rounded-full hover:bg-primary/20" onClick={() => setQuantity(q => q+1)}>
                 <Plus className="h-5 w-5" />
              </Button>
           </div>
-          <Button size="lg" className="flex-grow rounded-full bg-destructive/90 backdrop-blur-sm text-destructive-foreground hover:bg-destructive" onClick={handleAddToCart}>
+          <Button size="lg" className="flex-grow rounded-full" onClick={handleAddToCart}>
             <div className="flex justify-between w-full items-center">
                 <span>Add to cart</span>
                 <span>GHC {calculateTotal().toFixed(2)}</span>
