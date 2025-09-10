@@ -3,7 +3,7 @@
 
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { useRouter } from 'next/navigation';
-import { Loader2, ShieldAlert, ShoppingBag, Users, Utensils, MessageSquare, BarChart, LogOut } from 'lucide-react';
+import { Loader2, ShieldAlert, ShoppingBag, Users, Utensils, MessageSquare, BarChart, LogOut, Megaphone } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ import { auth } from '@/lib/firebase';
 const navItems = [
     { href: '/admin', label: 'Dashboard', icon: ShoppingBag },
     { href: '/admin/menu', label: 'Menu', icon: Utensils },
+    { href: '/admin/promos', label: 'Promos', icon: Megaphone },
     { href: '/admin/users', label: 'Users', icon: Users },
     { href: '/admin/finance', label: 'Finance', icon: BarChart },
     { href: '/admin/messaging', label: 'Messaging', icon: MessageSquare },

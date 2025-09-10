@@ -6,7 +6,7 @@ import { Bell, ShoppingCart, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, where, limit } from 'firebase/firestore';
-import type { food_item, promo_card_props } from '@/lib/types';
+import type { food_item, promo } from '@/lib/types';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,49 +16,39 @@ import { PromoCard } from '@/components/promo-card';
 import { PopularDishCard } from '@/components/popular-dish-card';
 import { useOnboarding } from '@/hooks/use-onboarding';
 
-
-const promos: promo_card_props[] = [
-  {
-    title: "Mama's Lunch Special",
-    description: "Make Mama feel special with our special Mama's Lunch!",
-    buttonText: "Order Now!",
-    imageUrl: "https://picsum.photos/300/300?random=60",
-    imageHint: "mother daughter eating",
-    imagePosition: 'right' as 'right',
-    href: '/menu'
-  },
-  {
-    title: "30% Off Loyalty Offer",
-    description: "Enjoy a whooping 30% off your next 2 orders as part of our loyalty program.",
-    buttonText: "Order Now!",
-    imageUrl: "https://picsum.photos/300/300?random=61",
-    imageHint: "plate of noodles",
-    imagePosition: 'right' as 'right',
-    href: '/menu'
-  }
-];
-
 export default function HomePage() {
   const { user } = useOnboarding();
   const displayName = user?.displayName?.split(' ')[0] || 'there';
   const [popularDishes, setPopularDishes] = useState<food_item[]>([]);
+  const [promos, setPromos] = useState<promo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const popularQuery = query(
       collection(db, 'foodItems'), 
       where('isDeleted', '!=', true),
-      limit(4) // Fetch up to 4 popular dishes
+      limit(4)
     );
 
-    const unsubscribe = onSnapshot(popularQuery, (snapshot) => {
+    const promosQuery = query(collection(db, 'promos'));
+
+    const unsubPopular = onSnapshot(popularQuery, (snapshot) => {
         const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as food_item));
         setPopularDishes(items);
-        setIsLoading(false);
+        if (isLoading) setIsLoading(false);
     });
 
-    return () => unsubscribe();
-  }, []);
+    const unsubPromos = onSnapshot(promosQuery, (snapshot) => {
+        const promoItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as promo));
+        setPromos(promoItems);
+        if (isLoading) setIsLoading(false);
+    });
+
+    return () => {
+        unsubPopular();
+        unsubPromos();
+    };
+  }, [isLoading]);
 
   return (
     <div className="food-pattern min-h-screen">

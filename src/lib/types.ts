@@ -77,7 +77,8 @@ export interface grouped_notifications {
   [group: string]: notification[];
 }
 
-export interface promo_card_props {
+export interface promo {
+  id: string;
   title: string;
   description: string;
   buttonText: string;
