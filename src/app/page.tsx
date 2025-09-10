@@ -1,20 +1,21 @@
 
 'use client';
 
-import { Bell, ShoppingCart, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bell, ShoppingCart, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { foodItems } from '@/lib/food';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query, where, limit } from 'firebase/firestore';
+import type { food_item, promo_card_props } from '@/lib/types';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { PromoCard } from '@/components/promo-card';
-import type { promo_card_props } from '@/lib/types';
 import { PopularDishCard } from '@/components/popular-dish-card';
 import { useOnboarding } from '@/hooks/use-onboarding';
 
-const popularDishes = foodItems.slice(0, 2);
 
 const promos: promo_card_props[] = [
   {
@@ -40,6 +41,24 @@ const promos: promo_card_props[] = [
 export default function HomePage() {
   const { user } = useOnboarding();
   const displayName = user?.displayName?.split(' ')[0] || 'there';
+  const [popularDishes, setPopularDishes] = useState<food_item[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const popularQuery = query(
+      collection(db, 'foodItems'), 
+      where('isDeleted', '!=', true),
+      limit(4) // Fetch up to 4 popular dishes
+    );
+
+    const unsubscribe = onSnapshot(popularQuery, (snapshot) => {
+        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as food_item));
+        setPopularDishes(items);
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="food-pattern min-h-screen">
@@ -98,11 +117,19 @@ export default function HomePage() {
                 </Button>
             </Link>
         </div>
-        <div className="space-y-4">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-40">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : popularDishes.length > 0 ? (
+          <div className="space-y-4">
             {popularDishes.map(item => (
                <PopularDishCard key={item.id} item={item} />
             ))}
-        </div>
+          </div>
+        ) : (
+          <p className="text-center text-muted-foreground py-8">No popular dishes available right now.</p>
+        )}
       </main>
     </div>
   );

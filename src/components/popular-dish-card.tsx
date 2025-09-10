@@ -4,6 +4,8 @@ import Image from 'next/image';
 import { Button } from './ui/button';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
+import { useCart } from '@/hooks/use-cart';
+import { useRouter } from 'next/navigation';
 
 interface PopularDishCardProps {
   item: food_item;
@@ -11,6 +13,41 @@ interface PopularDishCardProps {
 
 export function PopularDishCard({ item }: PopularDishCardProps) {
     const href = `/food/${item.id}`;
+    const { addToCart } = useCart();
+    const router = useRouter();
+
+    const isCustomizable = !!(item.sizes?.length || item.extras?.length);
+
+    const handleAddToCartClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (isCustomizable) {
+            router.push(href);
+        } else {
+            addToCart({
+                id: item.id,
+                name: item.title,
+                price: item.price,
+                imageUrl: item.imageUrl,
+                imageHint: item.imageHint,
+                quantity: 1,
+            });
+        }
+    };
+
+    const getPriceDisplay = () => {
+        if (isCustomizable && item.sizes && item.sizes.length > 0) {
+            const prices = item.sizes.map(s => s.price);
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+            if (minPrice === maxPrice) {
+                return `GHC ${minPrice.toFixed(2)}`;
+            }
+            return `GHC ${minPrice.toFixed(2)} - ${maxPrice.toFixed(2)}`;
+        }
+        return `GHC ${item.price.toFixed(2)}`;
+    };
 
     return (
         <Link href={href}>
@@ -26,9 +63,14 @@ export function PopularDishCard({ item }: PopularDishCardProps) {
                 <div className="flex-grow">
                     <h3 className="font-bold font-headline text-lg">{item.title}</h3>
                     <p className="text-muted-foreground text-sm line-clamp-2">{item.description}</p>
-                    <p className="text-destructive font-bold text-base my-2">GHC {item.price.toFixed(2)} - GHC 120</p>
+                    <p className="text-destructive font-bold text-base my-2">{getPriceDisplay()}</p>
                 </div>
-                <Button size="icon" variant="outline" className="rounded-full h-9 w-9 border-destructive text-destructive hover:bg-destructive/10 self-end">
+                <Button 
+                    size="icon" 
+                    variant="outline" 
+                    className="rounded-full h-9 w-9 border-destructive text-destructive hover:bg-destructive/10 self-end"
+                    onClick={handleAddToCartClick}
+                >
                     <Plus className="h-5 w-5" />
                 </Button>
             </div>
