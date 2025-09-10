@@ -1,3 +1,4 @@
+
 import type { food_item } from '@/lib/types';
 import Image from 'next/image';
 import { Button } from './ui/button';
@@ -9,9 +10,7 @@ interface PopularDishCardProps {
 }
 
 export function PopularDishCard({ item }: PopularDishCardProps) {
-    const href = item.slug === 'assorted-jollof'
-      ? `/food/assorted-jollof`
-      : `/food/${item.slug}`;
+    const href = `/food/${item.id}`;
 
     return (
         <Link href={href}>

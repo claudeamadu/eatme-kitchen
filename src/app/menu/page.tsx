@@ -16,7 +16,7 @@ import { useCart } from '@/hooks/use-cart';
 
 const MenuItemCard = ({ item }: { item: food_item }) => {
     const { addToCart } = useCart();
-    const href = `/food/${item.slug}`;
+    const href = `/food/${item.id}`;
       
     const handleAddToCart = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -30,6 +30,9 @@ const MenuItemCard = ({ item }: { item: food_item }) => {
             quantity: 1,
         });
     }
+
+    // Special ID for the customizable jollof
+    const ASSORTED_JOLLOF_ID = 'GhvGkY449paAMH5V02jL';
 
     return (
         <Link href={href}>
@@ -47,7 +50,7 @@ const MenuItemCard = ({ item }: { item: food_item }) => {
                     <p className="text-muted-foreground text-sm line-clamp-2">{item.description}</p>
                     <p className="text-destructive font-bold text-base my-2">GHC {item.price.toFixed(2)}</p>
                 </div>
-                {item.slug !== 'assorted-jollof' && (
+                {item.id !== ASSORTED_JOLLOF_ID && (
                     <Button 
                         size="icon" 
                         variant="outline" 
