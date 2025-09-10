@@ -155,9 +155,6 @@ export default function OrderDetailPage() {
     return null;
   }
 
-  const orderPrice = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const loyaltyPoints = 40.00; // Mock data
-  const deliveryFee = 20.00; // Mock data
   const total = order.total;
 
   return (

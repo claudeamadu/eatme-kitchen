@@ -62,8 +62,11 @@ export interface notification {
   type: notification_type;
   title: string;
   description: string;
-  time: string;
+  time: string; // This might be better as a timestamp
   isRead: boolean;
+  createdAt: Timestamp;
+  isGlobal?: boolean;
+  uid?: string;
   link?: {
     href: string;
     text: string;
@@ -98,6 +101,7 @@ export interface LoyaltyData {
   referrals: number;
   reviews: number;
   orders: number;
+  [key: string]: number; // To allow indexing with string.
 }
 
 export interface user {

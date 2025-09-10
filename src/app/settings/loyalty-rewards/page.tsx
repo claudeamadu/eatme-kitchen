@@ -115,7 +115,7 @@ export default function LoyaltyRewardsPage() {
 
         <div className="grid grid-cols-2 gap-4">
           {rewards.map((reward) => {
-            const currentProgress = loyaltyData ? loyaltyData[reward.id as keyof LoyaltyData] as number : 0;
+            const currentProgress = loyaltyData ? loyaltyData[reward.id as keyof LoyaltyData] as number || 0 : 0;
             const progressValue = reward.target ? (currentProgress / reward.target) * 100 : undefined;
             const progressText = reward.target ? `${currentProgress}/${reward.target}` : undefined;
 

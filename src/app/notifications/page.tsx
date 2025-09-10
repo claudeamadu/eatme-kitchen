@@ -1,63 +1,40 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, Bell, XCircle, CheckCircle, Info } from 'lucide-react';
+import { ChevronLeft, Bell, XCircle, CheckCircle, Info, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import type { notification, grouped_notifications, notification_type } from '@/lib/types';
+import { useOnboarding } from '@/hooks/use-onboarding';
+import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot, orderBy, or } from 'firebase/firestore';
+import { format, isToday, isYesterday, parseISO } from 'date-fns';
 
-const notifications: notification[] = [
-  {
-    id: '1',
-    type: 'success',
-    title: 'Order confirmed',
-    description: 'The restaurant has received your order and is processing it now. You will be notified once order is ready.',
-    time: '3:12PM',
-    isRead: false,
-  },
-  {
-    id: '2',
-    type: 'success',
-    title: 'Payment complete',
-    description: 'Your payment of GHC250 for your order has been processed successfully.',
-    time: '3:12PM',
-    isRead: true,
-    link: { href: '#', text: 'View receipt' }
-  },
-  {
-    id: '3',
-    type: 'update',
-    title: 'Menu update',
-    description: 'Discover our new blend of recipes for a mouth watering dish.',
-    time: '10:00AM',
-    isRead: true,
-  },
-  {
-    id: '4',
-    type: 'error',
-    title: 'Order cancelled',
-    description: 'We could not process your order due to incomplete payment. Kindly check your payment methods.',
-    time: '1:08PM',
-    isRead: true,
-  },
-  {
-    id: '5',
-    type: 'error',
-    title: 'Failed Transaction',
-    description: 'Your payment of GHC150 failed due to not enough funds. Please load your account and try again.',
-    time: '1:08PM',
-    isRead: true,
-  }
-];
+const groupNotifications = (notifications: notification[]): grouped_notifications => {
+  return notifications.reduce((acc, notif) => {
+    const date = notif.createdAt.toDate();
+    let group: string;
 
-const groupedNotifications: grouped_notifications = {
-  "Today": notifications.slice(0, 2),
-  "Yesterday": notifications.slice(2, 3),
-  "21/11/2024": notifications.slice(3, 5)
+    if (isToday(date)) {
+      group = 'Today';
+    } else if (isYesterday(date)) {
+      group = 'Yesterday';
+    } else {
+      group = format(date, 'dd/MM/yyyy');
+    }
+    
+    if (!acc[group]) {
+      acc[group] = [];
+    }
+    acc[group].push(notif);
+    return acc;
+  }, {} as grouped_notifications);
 };
+
 
 const notificationIcons: Record<notification_type, React.ElementType> = {
   success: CheckCircle,
@@ -66,16 +43,36 @@ const notificationIcons: Record<notification_type, React.ElementType> = {
   update: Bell,
 };
 
-const notificationColors: Record<notification_type, string> = {
-  success: 'text-green-500',
-  error: 'text-red-500',
-  info: 'text-blue-500',
-  update: 'text-primary',
-}
-
-
 export default function NotificationsPage() {
   const router = useRouter();
+  const { user } = useOnboarding();
+  const [notifications, setNotifications] = useState<notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      const notificationsQuery = query(
+        collection(db, 'notifications'),
+        or(
+            where('uid', '==', user.uid),
+            where('isGlobal', '==', true)
+        ),
+        orderBy('createdAt', 'desc')
+      );
+
+      const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+        const userNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as notification));
+        setNotifications(userNotifications);
+        setIsLoading(false);
+      });
+
+      return () => unsubscribe();
+    } else {
+        setIsLoading(false);
+    }
+  }, [user]);
+
+  const grouped = groupNotifications(notifications);
 
   return (
     <div className="food-pattern min-h-screen pb-24">
@@ -87,42 +84,54 @@ export default function NotificationsPage() {
       </header>
 
       <main className="container mx-auto px-4">
-        {Object.entries(groupedNotifications).map(([group, notifs]) => (
-          <div key={group} className="mb-6">
-            <h2 className="font-bold text-muted-foreground mb-3">{group}</h2>
-            <Card className="shadow-lg rounded-2xl">
-              <CardContent className="p-0">
-                <ul className="divide-y">
-                  {notifs.map((notif, index) => {
-                    const Icon = notificationIcons[notif.type];
-                    return (
-                       <li key={notif.id} className={cn("flex items-start gap-4 p-4", !notif.isRead && "bg-primary/5")}>
-                          <div className="relative">
-                            <div className={cn("p-2 rounded-full", !notif.isRead && "bg-destructive/10")}>
-                                <Icon className={cn("h-6 w-6", !notif.isRead ? 'text-destructive' : 'text-muted-foreground' )} />
-                            </div>
-                           {!notif.isRead && <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive border-2 border-background"></div>}
-                          </div>
-                          <div className="flex-grow">
-                              <p className="font-bold">{notif.title}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {notif.description}{' '}
-                                {notif.link && (
-                                    <Link href={notif.link.href} className="text-primary font-semibold underline">
-                                        {notif.link.text}
-                                    </Link>
-                                )}
-                              </p>
-                          </div>
-                          <p className="text-xs text-muted-foreground whitespace-nowrap">{notif.time}</p>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </CardContent>
-            </Card>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ))}
+        ) : Object.keys(grouped).length > 0 ? (
+          Object.entries(grouped).map(([group, notifs]) => (
+            <div key={group} className="mb-6">
+              <h2 className="font-bold text-muted-foreground mb-3">{group}</h2>
+              <Card className="shadow-lg rounded-2xl">
+                <CardContent className="p-0">
+                  <ul className="divide-y">
+                    {notifs.map((notif) => {
+                      const Icon = notificationIcons[notif.type];
+                      return (
+                         <li key={notif.id} className={cn("flex items-start gap-4 p-4", !notif.isRead && "bg-primary/5")}>
+                            <div className="relative">
+                              <div className={cn("p-2 rounded-full", !notif.isRead && "bg-destructive/10")}>
+                                  <Icon className={cn("h-6 w-6", !notif.isRead ? 'text-destructive' : 'text-muted-foreground' )} />
+                              </div>
+                             {!notif.isRead && <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive border-2 border-background"></div>}
+                            </div>
+                            <div className="flex-grow">
+                                <p className="font-bold">{notif.title}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {notif.description}{' '}
+                                  {notif.link && (
+                                      <Link href={notif.link.href} className="text-primary font-semibold underline">
+                                          {notif.link.text}
+                                      </Link>
+                                  )}
+                                </p>
+                            </div>
+                            <p className="text-xs text-muted-foreground whitespace-nowrap">{format(notif.createdAt.toDate(), 'p')}</p>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          ))
+        ) : (
+             <div className="text-center py-20 bg-card rounded-lg flex flex-col items-center">
+                <Bell className="w-16 h-16 text-muted-foreground mb-4" />
+                <h2 className="text-2xl font-semibold">No Notifications Yet</h2>
+                <p className="text-muted-foreground mt-2">You have no new notifications.</p>
+            </div>
+        )}
       </main>
     </div>
   );
