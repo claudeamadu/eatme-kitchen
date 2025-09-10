@@ -12,7 +12,7 @@ interface PopularDishCardProps {
 }
 
 export function PopularDishCard({ item }: PopularDishCardProps) {
-    const href = `/food/${item.id}`;
+    const href = `/item/${item.id}`;
     const { addToCart } = useCart();
     const router = useRouter();
 

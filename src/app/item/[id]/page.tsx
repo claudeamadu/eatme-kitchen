@@ -15,7 +15,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import type { food_item } from '@/lib/types';
 
 
-export default function FoodPage() {
+export default function ItemPage() {
   const router = useRouter();
   const params = useParams();
   const { id } = params;

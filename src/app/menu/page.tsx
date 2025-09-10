@@ -16,7 +16,7 @@ import { useCart } from '@/hooks/use-cart';
 
 const MenuItemCard = ({ item }: { item: food_item }) => {
     const { addToCart } = useCart();
-    const href = `/food/${item.id}`;
+    const href = `/item/${item.id}`;
       
     const isCustomizable = !!(item.sizes?.length || item.extras?.length);
 
