@@ -113,4 +113,20 @@ export interface user {
   dob?: string;
 }
 
-    
+export type reservation_status = 'Pending' | 'Confirmed' | 'Cancelled';
+
+export interface reservation {
+    id: string;
+    uid: string;
+    name: string;
+    phone: string;
+    date: string;
+    time: string;
+    guests: string;
+    duration: string;
+    occasion: string;
+    specialInstructions: string;
+    total: number;
+    status: reservation_status;
+    createdAt: Timestamp;
+}

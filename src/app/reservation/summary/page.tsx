@@ -1,12 +1,18 @@
 
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useReservation } from '@/hooks/use-reservation';
+import { useOnboarding } from '@/hooks/use-onboarding';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
+import Image from 'next/image';
 
 const DetailRow = ({ label, value }: { label: string, value: string }) => (
     <div className="flex justify-between py-3">
@@ -26,12 +32,53 @@ const months = [
 
 export default function ReservationSummaryPage() {
     const router = useRouter();
-    const { reservation, getReservationTotal } = useReservation();
+    const { user } = useOnboarding();
+    const { toast } = useToast();
+    const { reservation, getReservationTotal, clearReservation } = useReservation();
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const bookingDate = `${reservation.day} ${months.find(m => m.value === reservation.month)?.label || ''}, ${reservation.year}`;
     const bookingTime = `${reservation.hour}:${reservation.minute} ${reservation.period}`;
 
     const { durationCost, guestsCost, total } = getReservationTotal();
+
+    const handleConfirmReservation = async () => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Not Authenticated', description: 'Please log in to make a reservation.' });
+            return;
+        }
+
+        setIsProcessing(true);
+        try {
+            await addDoc(collection(db, 'reservations'), {
+                uid: user.uid,
+                name: reservation.name,
+                phone: reservation.phone,
+                date: bookingDate,
+                time: bookingTime,
+                guests: reservation.guests,
+                duration: reservation.duration,
+                occasion: reservation.occasion,
+                specialInstructions: reservation.specialInstructions,
+                total: total,
+                status: 'Pending',
+                createdAt: serverTimestamp(),
+            });
+
+            setIsModalOpen(true);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Reservation Failed', description: error.message });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+    
+    const handleFinish = () => {
+        clearReservation();
+        setIsModalOpen(false);
+        router.push('/');
+    };
 
     return (
         <div className="food-pattern min-h-screen pb-32">
@@ -81,12 +128,26 @@ export default function ReservationSummaryPage() {
             </main>
             
             <div className="fixed bottom-0 left-0 right-0 p-4">
-                <Link href="/checkout" passHref>
-                     <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14">
-                        Proceed to Payment
-                    </Button>
-                </Link>
+                 <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14" onClick={handleConfirmReservation} disabled={isProcessing}>
+                    {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isProcessing ? 'Confirming...' : 'Confirm Reservation'}
+                </Button>
             </div>
+
+            <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                <AlertDialogContent className="max-w-xs rounded-2xl">
+                     <AlertDialogHeader className="items-center text-center">
+                        <Image src="https://picsum.photos/seed/reservation/300/200" width={150} height={100} alt="Reservation Confirmed" data-ai-hint="reservation confirmation celebration" />
+                        <AlertDialogTitle className="text-2xl font-bold font-headline">Reservation Confirmed</AlertDialogTitle>
+                        <AlertDialogDescription>
+                           Your table has been booked. We're excited to have you! You can view your reservation details on the homepage.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction className="w-full rounded-full bg-red-600 hover:bg-red-700" onClick={handleFinish}>Done</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
