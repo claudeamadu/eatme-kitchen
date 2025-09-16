@@ -5,31 +5,59 @@ import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebas
 const PLACEHOLDER_IMAGE = 'https://placehold.co/600x400';
 
 /**
- * Uploads a file to Firebase Storage.
+ * Uploads a file to Firebase Storage with a timeout.
  * @param file The file to upload.
  * @param path The path where the file should be stored (e.g., 'images/profiles/user-id.jpg').
  * @returns A promise that resolves with the public download URL of the uploaded file.
- * Returns a placeholder image URL on failure.
+ * Returns a placeholder image URL on failure or timeout.
  */
 export async function uploadFile(file: File, path: string): Promise<string> {
   const storageRef = ref(storage, path);
   const uploadTask = uploadBytesResumable(storageRef, file);
 
   return new Promise((resolve, reject) => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    let uploadStarted = false;
+
+    const startTimeout = () => {
+      timeoutId = setTimeout(() => {
+        if (!uploadStarted) {
+          uploadTask.cancel();
+          console.log('Upload timed out after 5 seconds with no progress.');
+          resolve(PLACEHOLDER_IMAGE);
+        }
+      }, 5000);
+    };
+
+    const clearTimeout = () => {
+      if (timeoutId) {
+        global.clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    };
+
+    startTimeout();
+
     uploadTask.on(
       'state_changed',
       (snapshot) => {
-        // Optional: observe state change events such as progress, pause, and resume
+        // Progress has been made
+        uploadStarted = true;
+        clearTimeout(); // Clear the initial timeout
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         console.log('Upload is ' + progress + '% done');
       },
       (error) => {
         // Handle unsuccessful uploads
-        console.error("File upload failed:", error);
+        clearTimeout();
+        if (error.code !== 'storage/canceled') {
+            console.error("File upload failed:", error);
+        }
         resolve(PLACEHOLDER_IMAGE);
       },
       () => {
         // Handle successful uploads on complete
+        clearTimeout();
         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
           resolve(downloadURL);
         }).catch(error => {
