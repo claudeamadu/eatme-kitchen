@@ -18,7 +18,7 @@ export function PromoCard({ title, description, buttonText, imageUrl, imageHint,
           </Link>
         </div>
         <div className="hidden md:block">
-           {imageUrl && (
+           {imageUrl && imageUrl.trim() !== '' && (
             <Image
               src={imageUrl}
               alt={title}
