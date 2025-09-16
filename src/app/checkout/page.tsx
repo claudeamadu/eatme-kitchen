@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useCart } from '@/hooks/use-cart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, PlusCircle, Radio, Receipt, Wallet, Circle, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { ChevronLeft, PlusCircle, Receipt, Loader2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -16,7 +16,7 @@ import { useOnboarding } from '@/hooks/use-onboarding';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, runTransaction, increment } from 'firebase/firestore';
-
+import { useReservation } from '@/hooks/use-reservation';
 
 const MopedIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -31,74 +31,109 @@ const MopedIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 )
 
-export default function CheckoutPage() {
+const months = [
+    { value: '1', label: 'January' }, { value: '2', label: 'February' },
+    { value: '3', label: 'March' }, { value: '4', label: 'April' },
+    { value: '5', label: 'May' }, { value: '6', label: 'June' },
+    { value: '7', label: 'July' }, { value: '8', label: 'August' },
+    { value: '9', label: 'September' }, { value: '10', label: 'October' },
+    { value: '11', label: 'November' }, { value: '12', label: 'December' }
+];
+
+function CheckoutComponent() {
     const router = useRouter();
-    const { items, total, clearCart, appliedPoints } = useCart();
+    const searchParams = useSearchParams();
+    const checkoutType = searchParams.get('type') || 'food';
+
+    const cart = useCart();
+    const reservationHook = useReservation();
     const { user } = useOnboarding();
     const { toast } = useToast();
+    
     const [paymentMethod, setPaymentMethod] = useState('mobile-money');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
 
+    const isFood = checkoutType === 'food';
+    
+    const { total, items } = isFood 
+        ? { total: cart.total, items: cart.items } 
+        : { total: reservationHook.getReservationTotal().total, items: [] };
+    
     const fee = 0.0;
     const eLevy = 0.0;
     const finalTotal = total + fee + eLevy;
 
     const handleConfirmOrder = async () => {
         if (!user) {
-            toast({ variant: 'destructive', title: 'Not Authenticated', description: 'Please log in to place an order.' });
+            toast({ variant: 'destructive', title: 'Not Authenticated', description: 'Please log in to proceed.' });
             return;
         }
-        if (items.length === 0) {
-            toast({ variant: 'destructive', title: 'Empty Cart', description: 'Your cart is empty.' });
-            return;
-        }
-
+        
         setIsProcessing(true);
         try {
-            await runTransaction(db, async (transaction) => {
-                const loyaltyRef = doc(db, 'users', user.uid, 'loyalty', 'data');
-                
-                const orderData = {
+            if (isFood) {
+                if (items.length === 0) {
+                    toast({ variant: 'destructive', title: 'Empty Cart', description: 'Your cart is empty.' });
+                    return;
+                }
+                await runTransaction(db, async (transaction) => {
+                    const loyaltyRef = doc(db, 'users', user.uid, 'loyalty', 'data');
+                    const orderData = {
+                        uid: user.uid,
+                        items: cart.items.map(item => ({
+                            id: item.id, name: item.name, quantity: item.quantity, price: item.price,
+                            imageUrl: item.imageUrl, imageHint: item.imageHint, extras: item.extras,
+                        })),
+                        total: finalTotal, status: 'Ongoing', createdAt: serverTimestamp(),
+                    };
+                    transaction.set(doc(collection(db, 'orders')), orderData);
+                    const pointsEarned = Math.floor(finalTotal / 10);
+                    transaction.set(loyaltyRef, { 
+                        points: increment(pointsEarned - cart.appliedPoints),
+                        orders: increment(1) 
+                    }, { merge: true });
+                });
+            } else {
+                 const { reservation } = reservationHook;
+                 const bookingDate = `${reservation.day} ${months.find(m => m.value === reservation.month)?.label || ''}, ${reservation.year}`;
+                 const bookingTime = `${reservation.hour}:${reservation.minute} ${reservation.period}`;
+
+                 await addDoc(collection(db, 'reservations'), {
                     uid: user.uid,
-                    items: items.map(item => ({
-                        id: item.id,
-                        name: item.name,
-                        quantity: item.quantity,
-                        price: item.price,
-                        imageUrl: item.imageUrl,
-                        imageHint: item.imageHint,
-                        extras: item.extras,
-                    })),
-                    total: finalTotal,
-                    status: 'Ongoing',
+                    name: reservation.name, phone: reservation.phone, date: bookingDate, time: bookingTime,
+                    guests: reservation.guests, duration: reservation.duration, occasion: reservation.occasion,
+                    specialInstructions: reservation.specialInstructions, total: finalTotal, status: 'Pending',
                     createdAt: serverTimestamp(),
-                };
-
-                const ordersCollectionRef = collection(db, 'orders');
-                transaction.set(addDoc(ordersCollectionRef), orderData);
-
-                // Update loyalty points
-                const pointsEarned = Math.floor(finalTotal / 10); // Example: 1 point per 10 GHC spent
-                transaction.set(loyaltyRef, { 
-                    points: increment(pointsEarned - appliedPoints),
-                    orders: increment(1) 
-                }, { merge: true });
-            });
-            
+                });
+            }
             setIsModalOpen(true);
         } catch (error: any) {
-            console.error("Error creating order:", error);
-            toast({ variant: 'destructive', title: 'Order Failed', description: error.message });
+            console.error("Error creating order/reservation:", error);
+            toast({ variant: 'destructive', title: 'Action Failed', description: error.message });
         } finally {
             setIsProcessing(false);
         }
     };
 
-    const handleTrackOrder = () => {
-        clearCart();
-        router.push('/orders');
+    const handleModalAction = () => {
+        if (isFood) {
+            cart.clearCart();
+            router.push('/orders');
+        } else {
+            reservationHook.clearReservation();
+            router.push('/');
+        }
     }
+    
+    const getModalTitle = () => isFood ? 'Order Confirmed' : 'Reservation Confirmed';
+    const getModalDescription = () => isFood 
+        ? "Your order is confirmed! You'll receive updates as it progresses. Track the status anytime on the Orders page."
+        : "Your table has been booked. We're excited to have you! You can view your reservation details on the homepage.";
+    const getModalActionText = () => isFood ? 'Track Order' : 'Done';
+    const getModalImage = () => isFood ? 'https://picsum.photos/300/200' : 'https://picsum.photos/seed/reservation/300/200';
+    const getModalImageHint = () => isFood ? 'order confirmation' : 'reservation confirmation celebration';
+
 
     return (
         <div className="min-h-screen food-pattern pb-32">
@@ -113,7 +148,7 @@ export default function CheckoutPage() {
                 <Card className="rounded-2xl shadow-lg">
                     <CardContent className="p-6">
                         <div className="flex justify-end mb-4">
-                            <MopedIcon className="w-8 h-8 text-destructive" />
+                            {isFood ? <MopedIcon className="w-8 h-8 text-destructive" /> : <Receipt className="w-8 h-8 text-destructive" />}
                         </div>
                         <div className="space-y-3 text-sm">
                             <div className="flex justify-between">
@@ -181,24 +216,32 @@ export default function CheckoutPage() {
             <div className="fixed bottom-0 left-0 right-0 p-4">
                 <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14" onClick={handleConfirmOrder} disabled={isProcessing}>
                     {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isProcessing ? 'Processing...' : 'Confirm Order'}
+                    {isProcessing ? 'Processing...' : `Confirm ${isFood ? 'Order' : 'Reservation'}`}
                 </Button>
             </div>
 
             <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <AlertDialogContent className="max-w-xs rounded-2xl">
                      <AlertDialogHeader className="items-center text-center">
-                        <Image src="https://picsum.photos/300/200" width={150} height={100} alt="Order Confirmed" data-ai-hint="order confirmation" />
-                        <AlertDialogTitle className="text-2xl font-bold font-headline">Order Confirmed</AlertDialogTitle>
+                        <Image src={getModalImage()} width={150} height={100} alt={getModalTitle()} data-ai-hint={getModalImageHint()} />
+                        <AlertDialogTitle className="text-2xl font-bold font-headline">{getModalTitle()}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Your order is confirmed! You'll receive updates as it progresses. Track the status anytime on the Orders page.
+                           {getModalDescription()}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogAction className="w-full rounded-full bg-red-600 hover:bg-red-700" onClick={handleTrackOrder}>Track Order</AlertDialogAction>
+                        <AlertDialogAction className="w-full rounded-full bg-red-600 hover:bg-red-700" onClick={handleModalAction}>{getModalActionText()}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
         </div>
     );
+}
+
+export default function CheckoutPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin"/></div>}>
+            <CheckoutComponent />
+        </Suspense>
+    )
 }
