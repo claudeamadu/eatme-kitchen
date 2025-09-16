@@ -77,7 +77,7 @@ export default function AdminMenuPage() {
 
         let dataToSave: Partial<food_item> = { ...currentFoodItem };
         const itemId = dataToSave.id || doc(collection(db, 'foodItems')).id; // Generate ID upfront
-
+        
         try {
             // Upload main image if a new one is selected
             if (foodItemFiles.mainImage) {
@@ -102,7 +102,7 @@ export default function AdminMenuPage() {
 
             // Clean up temporary file-related states before Firestore operation
             const { id, ...dataForFirestore } = dataToSave;
-
+            
             if (id) {
                 await updateDoc(doc(db, 'foodItems', id), dataForFirestore);
                 toast({ title: 'Success', description: 'Food item updated.' });
