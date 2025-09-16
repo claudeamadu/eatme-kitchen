@@ -52,7 +52,7 @@ export default function AdminMenuPage() {
     }, []);
 
     const handleOpenFoodItemDialog = (item: food_item | null = null) => {
-        setCurrentFoodItem(item || { title: '', description: '', price: 0, cuisine: '', imageUrl: '', imageHint: '', dietary: [], isDeleted: false, sizes: [], extras: [] });
+        setCurrentFoodItem(item || { title: '', description: '', price: 0, cuisine: '', imageUrl: 'https://picsum.photos/seed/1/600/400', imageHint: '', dietary: [], isDeleted: false, sizes: [], extras: [] });
         setIsFoodItemDialogOpen(true);
     };
     
@@ -144,7 +144,9 @@ export default function AdminMenuPage() {
 
     const addDynamicField = (type: 'sizes' | 'extras') => {
         if (!currentFoodItem) return;
-        const newField = type === 'sizes' ? { name: '', price: 0 } : { name: '', price: 0 };
+        const newField = type === 'sizes' 
+            ? { name: '', price: 0 } 
+            : { name: '', price: 0, image: `https://picsum.photos/seed/${Math.random()}/100/100`, hint: 'food extra' };
         handleFoodItemChange(type, [...(currentFoodItem[type] || []), newField]);
     };
 
@@ -302,3 +304,5 @@ export default function AdminMenuPage() {
         </>
     );
 }
+
+    

@@ -145,9 +145,9 @@ export default function CheckoutPage() {
                                 <RadioGroupItem value="mobile-money" id="mobile-money" />
                                 <Label htmlFor="mobile-money" className="flex-grow ml-4 font-bold text-base">Mobile Money</Label>
                                 <div className="flex items-center gap-2">
-                                     <Image src="https://picsum.photos/100/100?random=40" alt="MTN Mobile Money" width={24} height={24} data-ai-hint="MTN logo" className="object-contain" />
-                                     <Image src="https://picsum.photos/100/100?random=41" alt="Vodafone Cash" width={24} height={24} data-ai-hint="vodafone logo" className="object-contain" />
-                                     <Image src="https://picsum.photos/100/100?random=42" alt="AirtelTigo Money" width={24} height={24} data-ai-hint="airteltigo logo" className="object-contain" />
+                                     <Image src="/networks/mtn.png" alt="MTN Mobile Money" width={24} height={24} data-ai-hint="MTN logo" className="object-contain" />
+                                     <Image src="/networks/vodafone.png" alt="Vodafone Cash" width={24} height={24} data-ai-hint="vodafone logo" className="object-contain" />
+                                     <Image src="/networks/airteltigo.png" alt="AirtelTigo Money" width={24} height={24} data-ai-hint="airteltigo logo" className="object-contain" />
                                 </div>
                             </div>
                             {paymentMethod === 'mobile-money' && (

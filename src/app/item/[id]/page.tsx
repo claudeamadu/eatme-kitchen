@@ -196,7 +196,7 @@ export default function ItemPage() {
                     )}
                   >
                     <div className="relative">
-                      <Image src={extra.image || "https://picsum.photos/100/100"} alt={extra.name} width={80} height={80} data-ai-hint={extra.hint || 'food extra'} className="w-full h-20 object-cover rounded-md mb-2"/>
+                      <Image src={extra.image || `https://picsum.photos/seed/${extra.name}/100/100`} alt={extra.name} width={80} height={80} data-ai-hint={extra.hint || 'food extra'} className="w-full h-20 object-cover rounded-md mb-2"/>
                       <div className={cn("absolute top-1 right-1 h-5 w-5 rounded-full border-2 bg-card flex items-center justify-center",
                           selectedExtras.includes(extra.name) ? 'border-destructive' : 'border-muted-foreground/30'
                       )}>
@@ -235,3 +235,5 @@ export default function ItemPage() {
     </div>
   );
 }
+
+    
