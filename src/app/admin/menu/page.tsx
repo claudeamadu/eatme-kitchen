@@ -16,6 +16,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { uploadFile } from '@/lib/firebase-storage';
+import Image from 'next/image';
+
+// Interface to handle file uploads alongside data
+interface ExtraWithFile extends food_extra {
+    file?: File;
+}
+
+interface FoodItemWithFile extends Partial<food_item> {
+    mainImageFile?: File;
+    extrasWithFiles?: ExtraWithFile[];
+}
 
 export default function AdminMenuPage() {
     const [activeTab, setActiveTab] = useState('food-items');
@@ -27,7 +39,7 @@ export default function AdminMenuPage() {
     const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const [currentFoodItem, setCurrentFoodItem] = useState<Partial<food_item> | null>(null);
+    const [currentFoodItem, setCurrentFoodItem] = useState<FoodItemWithFile | null>(null);
     const [currentCategory, setCurrentCategory] = useState<Partial<category> | null>(null);
     const [itemToDelete, setItemToDelete] = useState<{ id: string; type: 'food' | 'category' } | null>(null);
     
@@ -52,7 +64,11 @@ export default function AdminMenuPage() {
     }, []);
 
     const handleOpenFoodItemDialog = (item: food_item | null = null) => {
-        setCurrentFoodItem(item || { title: '', description: '', price: 0, cuisine: '', imageUrl: 'https://picsum.photos/seed/1/600/400', imageHint: '', dietary: [], isDeleted: false, sizes: [], extras: [] });
+        const foodItemData = item || { title: '', description: '', price: 0, cuisine: '', imageUrl: 'https://picsum.photos/seed/1/600/400', imageHint: '', dietary: [], isDeleted: false, sizes: [], extras: [] };
+        setCurrentFoodItem({
+            ...foodItemData,
+            extrasWithFiles: foodItemData.extras?.map(extra => ({ ...extra })) || []
+        });
         setIsFoodItemDialogOpen(true);
     };
     
@@ -63,17 +79,45 @@ export default function AdminMenuPage() {
 
     const handleSaveFoodItem = async () => {
         if (!currentFoodItem || !currentFoodItem.title) return;
-        
-        const foodData = { ...currentFoodItem };
 
         try {
-            if (foodData.id) {
-                const { id, ...data } = foodData;
-                await updateDoc(doc(db, 'foodItems', id), data);
+            let foodDataToSave = { ...currentFoodItem };
+            
+            // Upload main image if a new one is selected
+            if (foodDataToSave.mainImageFile) {
+                const itemId = foodDataToSave.id || Date.now().toString();
+                const imagePath = `foodItems/${itemId}/${foodDataToSave.mainImageFile.name}`;
+                const imageUrl = await uploadFile(foodDataToSave.mainImageFile, imagePath);
+                foodDataToSave.imageUrl = imageUrl;
+            }
+
+            // Upload images for extras if new ones are selected
+            if (foodDataToSave.extrasWithFiles) {
+                const updatedExtras = await Promise.all(
+                    foodDataToSave.extrasWithFiles.map(async (extra, index) => {
+                        if (extra.file) {
+                            const itemId = foodDataToSave.id || Date.now().toString();
+                            const extraImagePath = `foodItems/${itemId}/extras/${extra.file.name}`;
+                            const extraImageUrl = await uploadFile(extra.file, extraImagePath);
+                            return { ...extra, image: extraImageUrl, file: undefined };
+                        }
+                        return { ...extra, file: undefined };
+                    })
+                );
+                foodDataToSave.extras = updatedExtras;
+            } else {
+                foodDataToSave.extras = [];
+            }
+            
+            // Clean up temporary file-related fields
+            const { id, mainImageFile, extrasWithFiles, ...dataForFirestore } = foodDataToSave;
+
+
+            if (id) {
+                await updateDoc(doc(db, 'foodItems', id), dataForFirestore);
                 toast({ title: 'Success', description: 'Food item updated.' });
             } else {
-                 const { id, ...data } = foodData;
-                await addDoc(collection(db, 'foodItems'), { ...data, createdAt: serverTimestamp() });
+                await addDoc(collection(db, 'foodItems'), { ...dataForFirestore, createdAt: serverTimestamp() });
                 toast({ title: 'Success', description: 'Food item added.' });
             }
             setIsFoodItemDialogOpen(false);
@@ -128,31 +172,54 @@ export default function AdminMenuPage() {
         }
     };
 
-    // Handlers for dynamic fields
-    const handleFoodItemChange = (field: keyof food_item, value: any) => {
+    const handleFoodItemChange = (field: keyof FoodItemWithFile, value: any) => {
         setCurrentFoodItem(p => p ? { ...p, [field]: value } : null);
     };
 
-    const handleDynamicFieldChange = (type: 'sizes' | 'extras', index: number, field: keyof food_size | keyof food_extra, value: any) => {
-        if (!currentFoodItem) return;
-        const updatedFields = [...(currentFoodItem[type] || [])];
-        if (updatedFields[index]) {
-            (updatedFields[index] as any)[field] = value;
-            handleFoodItemChange(type, updatedFields);
+    const handleMainImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            handleFoodItemChange('mainImageFile', e.target.files[0]);
+             const reader = new FileReader();
+            reader.onload = (event) => {
+                handleFoodItemChange('imageUrl', event.target?.result as string);
+            };
+            reader.readAsDataURL(e.target.files[0]);
         }
     };
 
-    const addDynamicField = (type: 'sizes' | 'extras') => {
-        if (!currentFoodItem) return;
-        const newField = type === 'sizes' 
-            ? { name: '', price: 0 } 
-            : { name: '', price: 0, image: `https://picsum.photos/seed/${Math.random()}/100/100`, hint: 'food extra' };
-        handleFoodItemChange(type, [...(currentFoodItem[type] || []), newField]);
+    const handleDynamicFieldChange = (index: number, field: keyof ExtraWithFile, value: any) => {
+        if (!currentFoodItem?.extrasWithFiles) return;
+        const updatedExtras = [...currentFoodItem.extrasWithFiles];
+        if (updatedExtras[index]) {
+            (updatedExtras[index] as any)[field] = value;
+            handleFoodItemChange('extrasWithFiles', updatedExtras);
+        }
+    };
+    
+    const handleExtraImageChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            handleDynamicFieldChange(index, 'file', e.target.files[0]);
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                handleDynamicFieldChange(index, 'image', event.target?.result as string);
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
     };
 
-    const removeDynamicField = (type: 'sizes' | 'extras', index: number) => {
+    const addDynamicField = (type: 'sizes' | 'extrasWithFiles') => {
         if (!currentFoodItem) return;
-        const updatedFields = [...(currentFoodItem[type] || [])];
+        if (type === 'sizes') {
+             handleFoodItemChange('sizes', [...(currentFoodItem.sizes || []), { name: '', price: 0 }]);
+        } else {
+            handleFoodItemChange('extrasWithFiles', [...(currentFoodItem.extrasWithFiles || []), { name: '', price: 0, image: '', hint: 'food extra' }]);
+        }
+    };
+
+    const removeDynamicField = (type: 'sizes' | 'extrasWithFiles', index: number) => {
+        if (!currentFoodItem) return;
+        const currentArray = currentFoodItem[type as keyof FoodItemWithFile] as any[];
+        const updatedFields = [...(currentArray || [])];
         updatedFields.splice(index, 1);
         handleFoodItemChange(type, updatedFields);
     };
@@ -223,7 +290,7 @@ export default function AdminMenuPage() {
 
             {/* Food Item Dialog */}
             <Dialog open={isFoodItemDialogOpen} onOpenChange={setIsFoodItemDialogOpen}>
-                <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader><DialogTitle>{currentFoodItem?.id ? 'Edit' : 'Add'} Food Item</DialogTitle></DialogHeader>
                     <div className="grid gap-6 py-4">
                         {/* Basic Info */}
@@ -233,7 +300,13 @@ export default function AdminMenuPage() {
                             <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Description</Label><Textarea className="col-span-3" value={currentFoodItem?.description} onChange={(e) => handleFoodItemChange('description', e.target.value)} /></div>
                             <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Base Price (GHC)</Label><Input type="number" className="col-span-3" value={currentFoodItem?.price} onChange={(e) => handleFoodItemChange('price', parseFloat(e.target.value) || 0)} /></div>
                             <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Category</Label><Select value={currentFoodItem?.cuisine} onValueChange={(value) => handleFoodItemChange('cuisine', value)}><SelectTrigger className="col-span-3"><SelectValue placeholder="Select a category" /></SelectTrigger><SelectContent>{categories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}</SelectContent></Select></div>
-                            <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Image URL</Label><Input className="col-span-3" value={currentFoodItem?.imageUrl} onChange={(e) => handleFoodItemChange('imageUrl', e.target.value)} /></div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right">Main Image</Label>
+                                <div className="col-span-3 flex items-center gap-4">
+                                    {currentFoodItem?.imageUrl && <Image src={currentFoodItem.imageUrl} alt="preview" width={64} height={64} className="rounded-md object-cover h-16 w-16" />}
+                                    <Input type="file" onChange={handleMainImageChange} />
+                                </div>
+                            </div>
                             <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Image Hint</Label><Input className="col-span-3" value={currentFoodItem?.imageHint} onChange={(e) => handleFoodItemChange('imageHint', e.target.value)} /></div>
                             <div className="grid grid-cols-4 items-center gap-4"><Label className="text-right">Is Deleted</Label><Switch className="justify-self-start" checked={currentFoodItem?.isDeleted} onCheckedChange={(checked) => handleFoodItemChange('isDeleted', checked)} /></div>
                         </div>
@@ -244,11 +317,11 @@ export default function AdminMenuPage() {
                                 <h3 className="text-lg font-medium">Sizes</h3>
                                 <Button type="button" variant="outline" size="sm" onClick={() => addDynamicField('sizes')}><PlusCircle className="mr-2 h-4 w-4" /> Add Size</Button>
                             </div>
-                             <p className="text-sm text-muted-foreground">Add sizes if this item is customizable. If not, the base price will be used.</p>
+                            <p className="text-sm text-muted-foreground">Add sizes if this item is customizable. If not, the base price will be used.</p>
                             {currentFoodItem?.sizes?.map((size, index) => (
                                 <div key={index} className="grid grid-cols-12 items-center gap-2">
-                                    <Input placeholder="Size Name (e.g. Medium)" className="col-span-6" value={size.name} onChange={(e) => handleDynamicFieldChange('sizes', index, 'name', e.target.value)} />
-                                    <Input type="number" placeholder="Price" className="col-span-4" value={size.price} onChange={(e) => handleDynamicFieldChange('sizes', index, 'price', parseFloat(e.target.value) || 0)} />
+                                    <Input placeholder="Size Name (e.g. Medium)" className="col-span-6" value={size.name} onChange={(e) => handleDynamicFieldChange(index, 'name', e.target.value)} />
+                                    <Input type="number" placeholder="Price" className="col-span-4" value={size.price} onChange={(e) => handleDynamicFieldChange(index, 'price', parseFloat(e.target.value) || 0)} />
                                     <Button type="button" variant="ghost" size="icon" className="col-span-2 text-destructive" onClick={() => removeDynamicField('sizes', index)}><Trash2 className="h-4 w-4" /></Button>
                                 </div>
                             ))}
@@ -258,14 +331,23 @@ export default function AdminMenuPage() {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
                                 <h3 className="text-lg font-medium">Extras</h3>
-                                <Button type="button" variant="outline" size="sm" onClick={() => addDynamicField('extras')}><PlusCircle className="mr-2 h-4 w-4" /> Add Extra</Button>
+                                <Button type="button" variant="outline" size="sm" onClick={() => addDynamicField('extrasWithFiles')}><PlusCircle className="mr-2 h-4 w-4" /> Add Extra</Button>
                             </div>
                             <p className="text-sm text-muted-foreground">Add optional extras for this item.</p>
-                            {currentFoodItem?.extras?.map((extra, index) => (
-                                <div key={index} className="grid grid-cols-12 items-center gap-2">
-                                    <Input placeholder="Extra Name (e.g. Grilled Chicken)" className="col-span-6" value={extra.name} onChange={(e) => handleDynamicFieldChange('extras', index, 'name', e.target.value)} />
-                                    <Input type="number" placeholder="Price" className="col-span-4" value={extra.price} onChange={(e) => handleDynamicFieldChange('extras', index, 'price', parseFloat(e.target.value) || 0)} />
-                                    <Button type="button" variant="ghost" size="icon" className="col-span-2 text-destructive" onClick={() => removeDynamicField('extras', index)}><Trash2 className="h-4 w-4" /></Button>
+                            {currentFoodItem?.extrasWithFiles?.map((extra, index) => (
+                                <div key={index} className="p-4 border rounded-lg space-y-4">
+                                     <div className="grid grid-cols-12 items-center gap-2">
+                                        <Input placeholder="Extra Name (e.g. Grilled Chicken)" className="col-span-6" value={extra.name} onChange={(e) => handleDynamicFieldChange(index, 'name', e.target.value)} />
+                                        <Input type="number" placeholder="Price" className="col-span-4" value={extra.price} onChange={(e) => handleDynamicFieldChange(index, 'price', parseFloat(e.target.value) || 0)} />
+                                        <Button type="button" variant="ghost" size="icon" className="col-span-2 text-destructive" onClick={() => removeDynamicField('extrasWithFiles', index)}><Trash2 className="h-4 w-4" /></Button>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label className="text-right">Extra Image</Label>
+                                        <div className="col-span-3 flex items-center gap-4">
+                                            {extra.image && <Image src={extra.image} alt="preview" width={64} height={64} className="rounded-md object-cover h-16 w-16" />}
+                                            <Input type="file" className="text-sm" onChange={(e) => handleExtraImageChange(index, e)} />
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>

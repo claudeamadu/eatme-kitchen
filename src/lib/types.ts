@@ -9,7 +9,7 @@ export interface food_size {
 export interface food_extra {
   name: string;
   price: number;
-  image?: string;
+  image: string; // Changed from optional to required
   hint?: string;
 }
 
@@ -112,3 +112,5 @@ export interface user {
   phone?: string;
   dob?: string;
 }
+
+    
