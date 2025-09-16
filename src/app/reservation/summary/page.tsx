@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useReservation } from '@/hooks/use-reservation';
 
 const DetailRow = ({ label, value }: { label: string, value: string }) => (
     <div className="flex justify-between py-3">
@@ -14,8 +15,23 @@ const DetailRow = ({ label, value }: { label: string, value: string }) => (
     </div>
 );
 
+const months = [
+    { value: '1', label: 'January' }, { value: '2', label: 'February' },
+    { value: '3', label: 'March' }, { value: '4', label: 'April' },
+    { value: '5', label: 'May' }, { value: '6', label: 'June' },
+    { value: '7', label: 'July' }, { value: '8', label: 'August' },
+    { value: '9', label: 'September' }, { value: '10', label: 'October' },
+    { value: '11', label: 'November' }, { value: '12', label: 'December' }
+];
+
 export default function ReservationSummaryPage() {
     const router = useRouter();
+    const { reservation, getReservationTotal } = useReservation();
+
+    const bookingDate = `${reservation.day} ${months.find(m => m.value === reservation.month)?.label || ''}, ${reservation.year}`;
+    const bookingTime = `${reservation.hour}:${reservation.minute} ${reservation.period}`;
+
+    const { durationCost, guestsCost, total } = getReservationTotal();
 
     return (
         <div className="food-pattern min-h-screen pb-32">
@@ -29,14 +45,13 @@ export default function ReservationSummaryPage() {
             <main className="container mx-auto px-4 space-y-6">
                 <Card className="rounded-2xl shadow-lg">
                     <CardContent className="p-6 divide-y">
-                        <DetailRow label="Booking for" value="24 October, 2024" />
-                        <DetailRow label="Time" value="10:00 AM" />
-                        <DetailRow label="Reservation duration" value="3hrs" />
-                        <DetailRow label="Number of guests" value="9-15 guests" />
-                        <DetailRow label="Occasion" value="Birthday" />
-                        <DetailRow label="Name" value="James Quansah" />
-                        <DetailRow label="Email" value="jamesquansah@gmail.com" />
-                        <DetailRow label="Phone Number" value="0551234569" />
+                        <DetailRow label="Booking for" value={bookingDate} />
+                        <DetailRow label="Time" value={bookingTime} />
+                        <DetailRow label="Reservation duration" value={reservation.duration} />
+                        <DetailRow label="Number of guests" value={reservation.guests} />
+                        <DetailRow label="Occasion" value={reservation.occasion} />
+                        <DetailRow label="Name" value={reservation.name} />
+                        <DetailRow label="Phone Number" value={reservation.phone} />
                     </CardContent>
                 </Card>
 
@@ -45,17 +60,17 @@ export default function ReservationSummaryPage() {
                         <div className="space-y-3">
                              <div className="flex justify-between">
                                 <span className="text-muted-foreground">Duration</span>
-                                <span className="font-medium">GHC 50.00</span>
+                                <span className="font-medium">GHC {durationCost.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Number of guests</span>
-                                <span className="font-medium">GHC 500.00</span>
+                                <span className="font-medium">GHC {guestsCost.toFixed(2)}</span>
                             </div>
                         </div>
                         <div className="border-t my-4"></div>
                         <div className="flex justify-between items-center">
                             <span className="font-bold">TOTAL</span>
-                            <span className="font-bold text-xl">GHC 550.00</span>
+                            <span className="font-bold text-xl">GHC {total.toFixed(2)}</span>
                         </div>
                     </CardContent>
                 </Card>

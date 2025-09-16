@@ -7,6 +7,7 @@ import OnboardingPage from '@/app/onboarding/page';
 import BottomNav from '@/components/layout/bottom-nav';
 import { cn } from '@/lib/utils';
 import { CartProvider } from './use-cart';
+import { ReservationProvider } from './use-reservation';
 import SplashScreen from '@/app/splash/page';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -136,7 +137,9 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   return (
     <OnboardingContext.Provider value={value}>
        <CartProvider>
-            {renderContent()}
+            <ReservationProvider>
+                {renderContent()}
+            </ReservationProvider>
        </CartProvider>
     </OnboardingContext.Provider>
   );

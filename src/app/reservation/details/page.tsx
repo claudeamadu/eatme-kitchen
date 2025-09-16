@@ -2,15 +2,16 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ChevronLeft, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useReservation } from '@/hooks/use-reservation';
 
 export default function ReservationDetailsPage() {
     const router = useRouter();
+    const { reservation, updateReservation, isDetailsFilled } = useReservation();
 
     return (
         <div className="food-pattern min-h-screen pb-32">
@@ -25,7 +26,13 @@ export default function ReservationDetailsPage() {
                 <form className="space-y-6">
                      <div className="space-y-2">
                         <Label htmlFor="name" className="pl-1 text-muted-foreground">Name</Label>
-                        <Input id="name" placeholder="Enter your name" className="h-14 rounded-xl text-base bg-card shadow-sm" />
+                        <Input 
+                            id="name" 
+                            placeholder="Enter your name" 
+                            className="h-14 rounded-xl text-base bg-card shadow-sm" 
+                            value={reservation.name}
+                            onChange={(e) => updateReservation({ name: e.target.value })}
+                        />
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="phone" className="pl-1 text-muted-foreground">Phone Number</Label>
@@ -36,7 +43,14 @@ export default function ReservationDetailsPage() {
                             </Button>
                             <div className="relative flex-grow">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base text-muted-foreground">+233</span>
-                                <Input id="phone" type="tel" placeholder="Phone Number" className="h-14 rounded-xl text-base bg-card shadow-sm pl-14" />
+                                <Input 
+                                    id="phone" 
+                                    type="tel" 
+                                    placeholder="Phone Number" 
+                                    className="h-14 rounded-xl text-base bg-card shadow-sm pl-14" 
+                                    value={reservation.phone}
+                                    onChange={(e) => updateReservation({ phone: e.target.value })}
+                                />
                             </div>
                         </div>
                     </div>
@@ -44,8 +58,8 @@ export default function ReservationDetailsPage() {
             </main>
 
              <div className="fixed bottom-0 left-0 right-0 p-4">
-                <Link href="/reservation/summary" passHref>
-                    <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14">
+                <Link href="/reservation/summary" passHref className={!isDetailsFilled ? 'pointer-events-none' : ''}>
+                    <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14" disabled={!isDetailsFilled}>
                         Continue
                     </Button>
                 </Link>

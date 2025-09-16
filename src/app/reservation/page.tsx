@@ -1,7 +1,6 @@
 
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChevronLeft } from 'lucide-react';
@@ -9,17 +8,24 @@ import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useReservation } from '@/hooks/use-reservation';
 
 const durationOptions = ['1hr', '2hrs', '3hrs', '4hrs', '5hrs', 'All Day'];
 const guestOptions = ['2-4 guests', '5-8 guests', '9-15 guests', 'All Day'];
+const occasionOptions = ['Birthday', 'Anniversary', 'Business Meeting', 'Casual Dining', 'Other'];
+const months = [
+    { value: '1', label: 'January' }, { value: '2', label: 'February' },
+    { value: '3', label: 'March' }, { value: '4', label: 'April' },
+    { value: '5', label: 'May' }, { value: '6', label: 'June' },
+    { value: '7', label: 'July' }, { value: '8', label: 'August' },
+    { value: '9', label: 'September' }, { value: '10', label: 'October' },
+    { value: '11', label: 'November' }, { value: '12', label: 'December' }
+];
 
 export default function ReservationPage() {
   const router = useRouter();
-  const [selectedDuration, setSelectedDuration] = useState('3hrs');
-  const [selectedGuests, setSelectedGuests] = useState('9-15 guests');
-  const [specialInstructions, setSpecialInstructions] = useState('');
+  const { reservation, updateReservation } = useReservation();
 
   return (
     <div className="food-pattern min-h-screen pb-32">
@@ -39,30 +45,19 @@ export default function ReservationPage() {
           <CardContent className="p-4 space-y-2">
             <Label>Select date</Label>
             <div className="grid grid-cols-3 gap-2">
-              <Select defaultValue="24">
+              <Select value={reservation.day} onValueChange={(value) => updateReservation({ day: value })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {[...Array(31)].map((_, i) => <SelectItem key={i+1} value={`${i+1}`}>{i+1}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select defaultValue="10">
+              <Select value={reservation.month} onValueChange={(value) => updateReservation({ month: value })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">January</SelectItem>
-                  <SelectItem value="2">February</SelectItem>
-                  <SelectItem value="3">March</SelectItem>
-                  <SelectItem value="4">April</SelectItem>
-                  <SelectItem value="5">May</SelectItem>
-                  <SelectItem value="6">June</SelectItem>
-                  <SelectItem value="7">July</SelectItem>
-                  <SelectItem value="8">August</SelectItem>
-                  <SelectItem value="9">September</SelectItem>
-                  <SelectItem value="10">October</SelectItem>
-                  <SelectItem value="11">November</SelectItem>
-                  <SelectItem value="12">December</SelectItem>
+                  {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select defaultValue="2024">
+              <Select value={reservation.year} onValueChange={(value) => updateReservation({ year: value })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="2024">2024</SelectItem>
@@ -77,13 +72,13 @@ export default function ReservationPage() {
           <CardContent className="p-4 space-y-2">
             <Label>Select time</Label>
             <div className="grid grid-cols-3 gap-2">
-              <Select defaultValue="10">
+              <Select value={reservation.hour} onValueChange={(value) => updateReservation({ hour: value })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {[...Array(12)].map((_, i) => <SelectItem key={i+1} value={`${i+1}`}>{String(i+1).padStart(2, '0')}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select defaultValue="00">
+              <Select value={reservation.minute} onValueChange={(value) => updateReservation({ minute: value })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                    <SelectItem value="00">00</SelectItem>
@@ -92,7 +87,7 @@ export default function ReservationPage() {
                    <SelectItem value="45">45</SelectItem>
                 </SelectContent>
               </Select>
-              <Select defaultValue="AM">
+              <Select value={reservation.period} onValueChange={(value) => updateReservation({ period: value })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="AM">AM</SelectItem>
@@ -110,8 +105,8 @@ export default function ReservationPage() {
               {durationOptions.map(option => (
                 <Button 
                   key={option} 
-                  variant={selectedDuration === option ? 'destructive' : 'secondary'}
-                  onClick={() => setSelectedDuration(option)}
+                  variant={reservation.duration === option ? 'destructive' : 'secondary'}
+                  onClick={() => updateReservation({ duration: option })}
                   className="rounded-lg"
                 >
                   {option}
@@ -129,8 +124,8 @@ export default function ReservationPage() {
               {guestOptions.map(option => (
                 <Button 
                   key={option} 
-                  variant={selectedGuests === option ? 'destructive' : 'secondary'}
-                  onClick={() => setSelectedGuests(option)}
+                  variant={reservation.guests === option ? 'destructive' : 'secondary'}
+                  onClick={() => updateReservation({ guests: option })}
                   className="rounded-lg"
                 >
                   {option}
@@ -144,16 +139,12 @@ export default function ReservationPage() {
         <Card className="rounded-2xl shadow-lg">
           <CardContent className="p-4 space-y-2">
              <Label>Occasion</Label>
-              <Select>
+              <Select value={reservation.occasion} onValueChange={(value) => updateReservation({ occasion: value })}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Occasion" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="birthday">Birthday</SelectItem>
-                  <SelectItem value="anniversary">Anniversary</SelectItem>
-                  <SelectItem value="business">Business Meeting</SelectItem>
-                  <SelectItem value="casual">Casual Dining</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  {occasionOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                 </SelectContent>
               </Select>
           </CardContent>
@@ -165,12 +156,12 @@ export default function ReservationPage() {
             <Textarea
               id="special-instructions"
               placeholder="add any special requests (e.g., dietary needs, seating preferences, or accessibility requirements)."
-              value={specialInstructions}
-              onChange={e => setSpecialInstructions(e.target.value)}
+              value={reservation.specialInstructions}
+              onChange={e => updateReservation({ specialInstructions: e.target.value })}
               maxLength={100}
               rows={4}
             />
-            <p className="text-right text-xs text-muted-foreground">{specialInstructions.length}/100</p>
+            <p className="text-right text-xs text-muted-foreground">{reservation.specialInstructions.length}/100</p>
           </CardContent>
         </Card>
       </main>
