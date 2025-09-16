@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import type { promo } from '@/lib/types';
 
 export function PromoCard({ title, description, buttonText, imageUrl, imageHint, imagePosition, href }: promo) {
+  
   return (
     <Card className="shadow-lg rounded-2xl overflow-hidden">
       <CardContent className={cn("p-6 flex items-center justify-between gap-4", imagePosition === 'left' ? 'flex-row-reverse' : '')}>
