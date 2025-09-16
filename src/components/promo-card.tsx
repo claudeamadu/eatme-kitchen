@@ -18,14 +18,16 @@ export function PromoCard({ title, description, buttonText, imageUrl, imageHint,
           </Link>
         </div>
         <div className="hidden md:block">
-           <Image
-            src={imageUrl}
-            alt={title}
-            width={150}
-            height={150}
-            className="w-36 h-36 rounded-full object-cover border-4 border-white shadow-md"
-            data-ai-hint={imageHint}
-          />
+           {imageUrl && (
+            <Image
+              src={imageUrl}
+              alt={title}
+              width={150}
+              height={150}
+              className="w-36 h-36 rounded-full object-cover border-4 border-white shadow-md"
+              data-ai-hint={imageHint}
+            />
+           )}
         </div>
       </CardContent>
     </Card>
