@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import type { promo } from '@/lib/types';
@@ -14,13 +15,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { uploadFile } from '@/lib/firebase-storage';
 
 export default function AdminPromosPage() {
     const [promos, setPromos] = useState<promo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    
     const [currentPromo, setCurrentPromo] = useState<Partial<promo> | null>(null);
+    const [promoImageFile, setPromoImageFile] = useState<File | null>(null);
+
     const [itemToDelete, setItemToDelete] = useState<string | null>(null);
     const { toast } = useToast();
 
@@ -35,19 +40,41 @@ export default function AdminPromosPage() {
 
     const handleOpenDialog = (item: promo | null = null) => {
         setCurrentPromo(item || { title: '', description: '', buttonText: '', imageUrl: 'https://picsum.photos/seed/promo/150/150', imageHint: 'promo offer', imagePosition: 'right', href: '/menu' });
+        setPromoImageFile(null);
         setIsDialogOpen(true);
     };
 
+    const handlePromoImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setPromoImageFile(file);
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                handlePromoChange('imageUrl', event.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    
     const handleSave = async () => {
         if (!currentPromo || !currentPromo.title) return;
         
+        let dataToSave: Partial<promo> = { ...currentPromo };
+        const promoId = dataToSave.id || doc(collection(db, 'promos')).id;
+        
         try {
-            if (currentPromo.id) {
-                const { id, ...data } = currentPromo;
-                await updateDoc(doc(db, 'promos', id), data);
+            if (promoImageFile) {
+                const imagePath = `promos/${promoId}/image_${promoImageFile.name}`;
+                dataToSave.imageUrl = await uploadFile(promoImageFile, imagePath);
+            }
+            
+            const { id, ...dataForFirestore } = dataToSave;
+
+            if (id) {
+                await updateDoc(doc(db, 'promos', id), dataForFirestore);
                 toast({ title: 'Success', description: 'Promo updated.' });
             } else {
-                await addDoc(collection(db, 'promos'), { ...currentPromo, createdAt: serverTimestamp() });
+                await addDoc(collection(db, 'promos'), { ...dataForFirestore, createdAt: serverTimestamp() });
                 toast({ title: 'Success', description: 'Promo added.' });
             }
             setIsDialogOpen(false);
@@ -125,7 +152,13 @@ export default function AdminPromosPage() {
                         <div className="space-y-2"><Label>Description</Label><Input value={currentPromo?.description} onChange={(e) => handlePromoChange('description', e.target.value)} /></div>
                         <div className="space-y-2"><Label>Button Text</Label><Input value={currentPromo?.buttonText} onChange={(e) => handlePromoChange('buttonText', e.target.value)} /></div>
                         <div className="space-y-2"><Label>Button Link (href)</Label><Input value={currentPromo?.href} onChange={(e) => handlePromoChange('href', e.target.value)} /></div>
-                        <div className="space-y-2"><Label>Image URL</Label><Input value={currentPromo?.imageUrl} onChange={(e) => handlePromoChange('imageUrl', e.target.value)} /></div>
+                        <div className="space-y-2">
+                            <Label>Image</Label>
+                            <div className="flex items-center gap-4">
+                                {currentPromo?.imageUrl && <Image src={currentPromo.imageUrl} alt="preview" width={64} height={64} className="rounded-md object-cover h-16 w-16" />}
+                                <Input type="file" onChange={handlePromoImageChange} />
+                            </div>
+                        </div>
                         <div className="space-y-2"><Label>Image Hint</Label><Input value={currentPromo?.imageHint} onChange={(e) => handlePromoChange('imageHint', e.target.value)} /></div>
                         <div className="space-y-2"><Label>Image Position</Label>
                              <Select value={currentPromo?.imagePosition} onValueChange={(value) => handlePromoChange('imagePosition', value)}>
