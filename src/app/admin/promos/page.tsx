@@ -39,7 +39,7 @@ export default function AdminPromosPage() {
     }, []);
 
     const handleOpenDialog = (item: promo | null = null) => {
-        setCurrentPromo(item || { title: '', description: '', buttonText: '', imageUrl: 'https://picsum.photos/seed/promo/150/150', imageHint: 'promo offer', imagePosition: 'right', href: '/menu' });
+        setCurrentPromo(item || { title: '', description: '', buttonText: '', imageUrl: 'https://placehold.co/600x400', imageHint: 'promo offer', imagePosition: 'right', href: '/menu' });
         setPromoImageFile(null);
         setIsDialogOpen(true);
     };
