@@ -41,17 +41,19 @@ export async function uploadFile(file: File, path: string): Promise<string> {
     uploadTask.on(
       'state_changed',
       (snapshot) => {
-        // Progress has been made
-        uploadStarted = true;
-        clearTimeout(); // Clear the initial timeout
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         console.log('Upload is ' + progress + '% done');
+        // Progress has been made
+        if (progress > 0) {
+          uploadStarted = true;
+          clearTimeout(); // Clear the initial timeout
+        }
       },
       (error) => {
         // Handle unsuccessful uploads
         clearTimeout();
         if (error.code !== 'storage/canceled') {
-            console.error("File upload failed:", error);
+          console.error("File upload failed:", error);
         }
         resolve(PLACEHOLDER_IMAGE);
       },
@@ -61,8 +63,8 @@ export async function uploadFile(file: File, path: string): Promise<string> {
         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
           resolve(downloadURL);
         }).catch(error => {
-            console.error("Failed to get download URL:", error);
-            resolve(PLACEHOLDER_IMAGE);
+          console.error("Failed to get download URL:", error);
+          resolve(PLACEHOLDER_IMAGE);
         });
       }
     );
@@ -81,8 +83,8 @@ export async function deleteFile(filePath: string): Promise<void> {
   } catch (error: any) {
     // We don't throw an error if the file doesn't exist.
     if (error.code !== 'storage/object-not-found') {
-        console.error("Failed to delete file:", error);
-        throw error;
+      console.error("Failed to delete file:", error);
+      throw error;
     }
   }
 }
@@ -110,19 +112,19 @@ export async function getFileUrl(filePath: string): Promise<string> {
  * @param filename The desired name for the downloaded file.
  */
 export async function downloadFromUrl(url: string, filename: string) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Network response was not ok.');
-        const blob = await response.blob();
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(link.href);
-    } catch(error) {
-        console.error("Download failed:", error);
-        alert("Failed to download file.");
-    }
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Network response was not ok.');
+    const blob = await response.blob();
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(link.href);
+  } catch (error) {
+    console.error("Download failed:", error);
+    alert("Failed to download file.");
+  }
 }
