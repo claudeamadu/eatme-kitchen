@@ -50,7 +50,7 @@ export default function AddPaymentMethodPage() {
                 name: fullName,
                 network: network,
                 number: phone,
-                logo: `https://picsum.photos/100/100?random=${Math.floor(Math.random() * 50)}`, // placeholder logo
+                logo: `/networks/${network}.png`,
                 logoHint: `${network.split(' ')[0].toLowerCase()} logo`,
             });
 
@@ -80,7 +80,7 @@ export default function AddPaymentMethodPage() {
                             <WalletIcon className="w-8 h-8 opacity-80" />
                              {network && (
                                 <Image 
-                                    src={`https://picsum.photos/100/100?random=${network === 'mtn' ? 40 : network === 'vodafone' ? 41 : 42}`} 
+                                    src={`/networks/${network}.png`} 
                                     alt={network} 
                                     width={40} height={40} 
                                     data-ai-hint={`${network} logo`} className="object-contain" 

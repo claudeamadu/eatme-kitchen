@@ -13,7 +13,7 @@ export default function SplashScreen() {
         transition={{ duration: 0.8, ease: 'easeOut' }}
       >
         <Image
-          src="https://storage.googleapis.com/project-spark-b6334.appspot.com/static/assets/EatMeLogo.png"
+          src="/assets/EatMeLogo.png"
           alt="EatMe Kitchen Logo"
           width={250}
           height={250}

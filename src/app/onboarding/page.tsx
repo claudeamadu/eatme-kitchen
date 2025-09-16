@@ -12,21 +12,21 @@ import { ChefHat, Heart, Search } from 'lucide-react';
 
 const onboardingSteps = [
   {
-    image: 'https://picsum.photos/800/1200',
+    image: '/assets/onboard-1.jpg',
     imageHint: 'delicious food',
     title: 'With Every Bite',
     description: 'Savor the Burst of Flavor and Freshness.',
     icon: ChefHat,
   },
   {
-    image: 'https://picsum.photos/800/1200',
+    image: '/assets/onboard-2.jpg',
     imageHint: 'recipe book',
     title: 'Discover New Tastes',
     description: 'Explore thousands of recipes from around the world.',
     icon: Search,
   },
   {
-    image: 'https://picsum.photos/800/1200',
+    image: '/assets/onboard-3.jpg',
     imageHint: 'favorite meal',
     title: 'Save Your Favorites',
     description: 'Never lose a recipe again. Keep them all in one place.',

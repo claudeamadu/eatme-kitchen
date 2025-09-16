@@ -20,7 +20,7 @@ const rewards = [
         id: 'referrals',
         title: 'Referral Feast',
         description: 'Refer 10 friends and gain a whooping 1000pts',
-        image: 'https://picsum.photos/200/150?random=50',
+        image: '/assets/rewards/ccc2546fd6f43a6f92d59440a884f685.png',
         imageHint: 'group of friends',
         target: 10,
     },
@@ -28,7 +28,7 @@ const rewards = [
         id: 'first-bite',
         title: 'First Bite Bonus',
         description: 'Enjoy extra points when you try a new menu item.',
-        image: 'https://picsum.photos/200/150?random=51',
+        image: '/assets/rewards/7e0d309cc3a115c115f99deae34c3fee.png',
         imageHint: 'delicious meal',
         tag: '6 New trys',
     },
@@ -36,21 +36,21 @@ const rewards = [
         id: 'loyalty-lunch',
         title: 'Loyalty Lunch',
         description: 'Unlock a free lunch after several visits.',
-        image: 'https://picsum.photos/200/150?random=52',
+        image: '/assets/rewards/d6e4b0dc2e8998bba353d284473391d0.png',
         imageHint: 'thumbs up',
     },
     {
         id: 'birthday-bash',
         title: 'Birthday Bash',
         description: 'Celebrate your birthday with bonus points and exclusive perks.',
-        image: 'https://picsum.photos/200/150?random=53',
+        image: '/assets/rewards/9cc08b0ff7a667d769d134a037bbc641.png',
         imageHint: 'birthday gift',
     },
     {
         id: 'reviews',
         title: 'Feedback Star',
         description: 'Get rewarded for leaving 8 reviews.',
-        image: 'https://picsum.photos/200/150?random=54',
+        image: '/assets/rewards/93ca13d285236f95c503b594686917a4.png',
         imageHint: 'five star review',
         target: 8,
     },
@@ -106,7 +106,7 @@ export default function LoyaltyRewardsPage() {
                 <p className="text-sm font-semibold text-muted-foreground">{(loyaltyData?.points || 0) * 0.5}% off your next meal order</p>
                 <Button className="mt-3 rounded-full bg-red-600 hover:bg-red-700 text-white px-8">Redeem</Button>
               </div>
-              <Image src="https://picsum.photos/200/150?random=55" alt="Gift box" width={120} height={90} data-ai-hint="gift box" className="w-32 h-auto" />
+              <Image src="/assets/rewards/9cc08b0ff7a667d769d134a037bbc641.png" alt="Gift box" width={120} height={90} data-ai-hint="gift box" className="w-32 h-auto" />
             </div>
           </CardContent>
         </Card>
