@@ -86,6 +86,8 @@ export interface promo {
   imageHint: string;
   imagePosition: 'left' | 'right';
   href: string;
+  discountType?: 'none' | 'fixed' | 'percentage';
+  discountValue?: number;
 }
 
 export interface wallet {
@@ -150,4 +152,3 @@ export interface review {
     userDisplayName: string;
     userPhotoURL?: string;
 }
-

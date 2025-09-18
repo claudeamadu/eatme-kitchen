@@ -39,7 +39,7 @@ export default function AdminPromosPage() {
     }, []);
 
     const handleOpenDialog = (item: promo | null = null) => {
-        setCurrentPromo(item || { title: '', description: '', buttonText: '', imageUrl: 'https://placehold.co/600x400', imageHint: 'promo offer', imagePosition: 'right', href: '/menu' });
+        setCurrentPromo(item || { title: '', description: '', buttonText: '', imageUrl: 'https://placehold.co/600x400', imageHint: 'promo offer', imagePosition: 'right', href: '/menu', discountType: 'none', discountValue: 0 });
         setPromoImageFile(null);
         setIsDialogOpen(true);
     };
@@ -127,12 +127,17 @@ export default function AdminPromosPage() {
                 </CardHeader>
                 <CardContent>
                     <Table>
-                        <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Description</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Description</TableHead><TableHead>Discount</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
                         <TableBody>
                             {promos.map(item => (
                                 <TableRow key={item.id}>
                                     <TableCell>{item.title}</TableCell>
                                     <TableCell>{item.description}</TableCell>
+                                    <TableCell>
+                                        {item.discountType === 'fixed' && `GHC ${item.discountValue?.toFixed(2)}`}
+                                        {item.discountType === 'percentage' && `${item.discountValue}%`}
+                                        {(!item.discountType || item.discountType === 'none') && 'None'}
+                                    </TableCell>
                                     <TableCell className="space-x-2">
                                         <Button variant="outline" size="icon" onClick={() => handleOpenDialog(item)}><Edit className="h-4 w-4" /></Button>
                                         <Button variant="destructive" size="icon" onClick={() => handleDeleteClick(item.id)}><Trash2 className="h-4 w-4" /></Button>
@@ -169,6 +174,27 @@ export default function AdminPromosPage() {
                                 </SelectContent>
                             </Select>
                         </div>
+                         <div className="space-y-2"><Label>Discount Type</Label>
+                             <Select value={currentPromo?.discountType || 'none'} onValueChange={(value) => handlePromoChange('discountType', value)}>
+                                <SelectTrigger><SelectValue placeholder="Select discount type" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="fixed">Fixed</SelectItem>
+                                    <SelectItem value="percentage">Percentage</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        {currentPromo?.discountType && currentPromo.discountType !== 'none' && (
+                             <div className="space-y-2">
+                                <Label>Discount Value</Label>
+                                <Input 
+                                    type="number" 
+                                    value={currentPromo?.discountValue} 
+                                    onChange={(e) => handlePromoChange('discountValue', parseFloat(e.target.value) || 0)}
+                                    placeholder={currentPromo.discountType === 'fixed' ? 'e.g., 10 for GHC 10.00' : 'e.g., 15 for 15%'}
+                                />
+                             </div>
+                        )}
                     </div>
                     <DialogFooter><Button onClick={handleSave}>Save</Button></DialogFooter>
                 </DialogContent>
