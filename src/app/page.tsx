@@ -22,6 +22,21 @@ export default function HomePage() {
   const [popularDishes, setPopularDishes] = useState<food_item[]>([]);
   const [promos, setPromos] = useState<promo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [greeting, setGreeting] = useState('Good Afternoon!');
+
+  useEffect(() => {
+    const getGreeting = () => {
+      const currentHour = new Date().getHours();
+      if (currentHour < 12) {
+        return 'Good Morning!';
+      } else if (currentHour < 18) {
+        return 'Good Afternoon!';
+      } else {
+        return 'Good Evening!';
+      }
+    };
+    setGreeting(getGreeting());
+  }, []);
 
   useEffect(() => {
     const popularQuery = query(
@@ -55,7 +70,7 @@ export default function HomePage() {
       <header className="container mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-2">
           <div>
-            <h1 className="text-3xl font-headline font-bold">Good Afternoon! {displayName}</h1>
+            <h1 className="text-3xl font-headline font-bold">{greeting} {displayName}</h1>
             <p className="text-muted-foreground">We hope you're in a good mood to dine.</p>
           </div>
           <div className="flex items-center gap-2">
