@@ -24,7 +24,7 @@ interface CartContextType {
 }
 
 const CART_KEY = 'eatme-cart';
-const POINTS_TO_₵= 0.5; // 1 point = 0.5 GHC
+const POINTS_TO_GHC= 0.5; // 1 point = 0.5 GHC
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
