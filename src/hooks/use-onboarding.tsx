@@ -31,7 +31,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative flex min-h-screen flex-col">
-      <main className={cn("flex-1", showBottomNav && "pb-20")}>{children}</main>
+      <main className={cn("flex-1", showBottomNav && "pb-24")}>{children}</main>
       {showBottomNav && <BottomNav />}
     </div>
   );
