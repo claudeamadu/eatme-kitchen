@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useCart } from '@/hooks/use-cart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,8 +15,10 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, runTransaction, increment } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, runTransaction, increment, query, onSnapshot } from 'firebase/firestore';
 import { useReservation } from '@/hooks/use-reservation';
+import type { wallet } from '@/lib/types';
+import Link from 'next/link';
 
 const MopedIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -53,6 +55,10 @@ function CheckoutComponent() {
     const [paymentMethod, setPaymentMethod] = useState('mobile-money');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    
+    const [wallets, setWallets] = useState<wallet[]>([]);
+    const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
+
 
     const isFood = checkoutType === 'food';
     
@@ -63,6 +69,23 @@ function CheckoutComponent() {
     const fee = 0.0;
     const eLevy = 0.0;
     const finalTotal = total + fee + eLevy;
+
+    useEffect(() => {
+        if (user) {
+          const walletsQuery = query(collection(db, 'users', user.uid, 'wallets'));
+          const unsubscribe = onSnapshot(walletsQuery, (querySnapshot) => {
+            const userWallets: wallet[] = [];
+            querySnapshot.forEach((doc) => {
+              userWallets.push({ id: doc.id, ...doc.data() } as wallet);
+            });
+            setWallets(userWallets);
+            if (userWallets.length > 0 && !selectedWalletId) {
+                setSelectedWalletId(userWallets[0].id);
+            }
+          });
+          return () => unsubscribe();
+        }
+    }, [user, selectedWalletId]);
 
     const handleConfirmOrder = async () => {
         if (!user) {
@@ -195,18 +218,22 @@ function CheckoutComponent() {
                             </div>
                             {paymentMethod === 'mobile-money' && (
                                 <div className="p-4 pt-0">
-                                    <Card className="p-4 shadow-sm">
-                                        <div className="flex items-center">
-                                            <div className="flex-grow">
-                                                <p className="font-bold">0551245566</p>
-                                                <p className="text-sm text-muted-foreground">MTN Mobile Money</p>
-                                            </div>
-                                        </div>
-                                    </Card>
-                                     <button className="flex items-center gap-2 mt-4 text-destructive font-semibold">
+                                    <RadioGroup value={selectedWalletId || ''} onValueChange={setSelectedWalletId} className="space-y-3">
+                                        {wallets.map((wallet) => (
+                                            <Label key={wallet.id} htmlFor={wallet.id} className={cn("flex items-center gap-4 p-4 rounded-lg cursor-pointer transition-colors", selectedWalletId === wallet.id ? "bg-primary/10 border-primary" : "bg-background")}>
+                                                <RadioGroupItem value={wallet.id} id={wallet.id} />
+                                                <Image src={wallet.logo} alt={wallet.network} width={32} height={32} data-ai-hint={wallet.logoHint} className="w-8 h-8 rounded-md object-contain" />
+                                                <div className="flex-grow">
+                                                    <p className="font-bold">{wallet.name}</p>
+                                                    <p className="text-sm text-muted-foreground">{wallet.network} - {wallet.number}</p>
+                                                </div>
+                                            </Label>
+                                        ))}
+                                    </RadioGroup>
+                                     <Link href="/settings/payment-methods/add" className="flex items-center gap-2 mt-4 text-destructive font-semibold">
                                         <PlusCircle className="w-5 h-5" />
                                         <span>Add a new wallet</span>
-                                    </button>
+                                    </Link>
                                 </div>
                             )}
                         </div>
@@ -222,7 +249,7 @@ function CheckoutComponent() {
             </main>
 
             <div className="fixed bottom-0 left-0 right-0 p-4">
-                <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14" onClick={handleConfirmOrder} disabled={isProcessing}>
+                <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14" onClick={handleConfirmOrder} disabled={isProcessing || (paymentMethod === 'mobile-money' && !selectedWalletId)}>
                     {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isProcessing ? 'Processing...' : `Confirm ${isFood ? 'Order' : 'Reservation'}`}
                 </Button>
@@ -253,3 +280,5 @@ export default function CheckoutPage() {
         </Suspense>
     )
 }
+
+    
