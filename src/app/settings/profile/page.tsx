@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ChevronLeft, Edit2, Loader2 } from 'lucide-react';
+import { ChevronLeft, Edit2, Loader2, CalendarIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { updateProfile } from 'firebase/auth';
@@ -14,6 +14,10 @@ import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { uploadFile } from '@/lib/firebase-storage';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -22,7 +26,7 @@ export default function ProfilePage() {
     
     const [username, setUsername] = useState('');
     const [phone, setPhone] = useState('');
-    const [dob, setDob] = useState('');
+    const [dob, setDob] = useState<Date | undefined>();
     const [isLoading, setIsLoading] = useState(false);
     
     const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
@@ -39,7 +43,13 @@ export default function ProfilePage() {
                 if (userDocSnap.exists()) {
                     const userData = userDocSnap.data();
                     setPhone(userData.phone || '');
-                    setDob(userData.dob || '');
+                    if (userData.dob) {
+                        try {
+                            setDob(new Date(userData.dob));
+                        } catch (e) {
+                           console.error("Could not parse date", e);
+                        }
+                    }
                 }
             };
             fetchUserData();
@@ -86,7 +96,7 @@ export default function ProfilePage() {
                 email: user.email,
                 displayName: username,
                 phone: phone,
-                dob: dob,
+                dob: dob ? format(dob, 'yyyy-MM-dd') : '',
                 photoURL: photoURL,
             }, { merge: true });
 
@@ -140,7 +150,28 @@ export default function ProfilePage() {
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="dob" className="pl-1 text-muted-foreground">Date of birth</Label>
-                        <Input id="dob" value={dob} onChange={(e) => setDob(e.target.value)} placeholder="DD/MM/YYYY" className="h-14 rounded-xl text-base bg-card shadow-sm" />
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full h-14 rounded-xl text-base bg-card shadow-sm justify-start text-left font-normal",
+                                    !dob && "text-muted-foreground"
+                                )}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {dob ? format(dob, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                mode="single"
+                                selected={dob}
+                                onSelect={setDob}
+                                initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
                     </div>
                      <div className="fixed bottom-0 left-0 right-0 p-4 bg-transparent">
                         <Button size="lg" type="submit" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14" disabled={isLoading}>
