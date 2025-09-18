@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,7 +25,15 @@ const months = [
 
 export default function ReservationPage() {
   const router = useRouter();
-  const { reservation, updateReservation } = useReservation();
+  const { reservation, updateReservation, config } = useReservation();
+
+  if (!config) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="food-pattern min-h-screen pb-32">
@@ -113,7 +121,7 @@ export default function ReservationPage() {
                 </Button>
               ))}
             </div>
-            <p className="text-xs text-yellow-600 pt-2">Note: A charge of GHC50 per hour applies to your reservation.</p>
+            <p className="text-xs text-yellow-600 pt-2">Note: A charge of GHC{config.ratePerHour.toFixed(2)} per hour applies to your reservation.</p>
           </CardContent>
         </Card>
         
@@ -132,7 +140,7 @@ export default function ReservationPage() {
                 </Button>
               ))}
             </div>
-            <p className="text-xs text-yellow-600 pt-2">Note: A charge of GHC500 applies to your selection.</p>
+            <p className="text-xs text-yellow-600 pt-2">Note: A charge of GHC{(config.guestRates[reservation.guests] || 0).toFixed(2)} applies to your selection.</p>
           </CardContent>
         </Card>
         

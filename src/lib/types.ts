@@ -132,6 +132,13 @@ export interface reservation {
     createdAt: Timestamp;
 }
 
+export interface reservation_config {
+    ratePerHour: number;
+    guestRates: {
+        [key: string]: number;
+    };
+}
+
 export interface review {
     id: string;
     uid: string;
@@ -141,5 +148,6 @@ export interface review {
     text: string;
     createdAt: Timestamp;
     userDisplayName: string;
-userPhotoURL?: string;
+    userPhotoURL?: string;
 }
+

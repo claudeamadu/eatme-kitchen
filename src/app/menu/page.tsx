@@ -44,7 +44,7 @@ const MenuItemCard = ({ item }: { item: food_item }) => {
 
     return (
         <Link href={href}>
-            <div className="bg-card p-4 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-card mb-4 p-4 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
                 <Image
                     src={item.imageUrl}
                     alt={item.title}

@@ -51,7 +51,7 @@ export function PopularDishCard({ item }: PopularDishCardProps) {
 
     return (
         <Link href={href}>
-            <div className="bg-card p-3 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-card p-3 mb-4 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
                 <Image
                     src={item.imageUrl}
                     alt={item.title}

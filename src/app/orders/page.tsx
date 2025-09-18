@@ -30,7 +30,7 @@ const OrderCard = ({ order }: { order: order }) => {
   return (
     <Link href={`/orders/${order.id}`} passHref>
         <Card className="shadow-lg">
-          <CardHeader className="flex flex-row justify-between items-start pb-2">
+          <CardHeader className="flex flex-row justify-between items-start pb-2 mb-2">
             <div>
               <p className="text-sm text-muted-foreground">Order No. {order.id.slice(0,6)}</p>
             </div>

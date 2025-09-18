@@ -70,8 +70,8 @@ export default function HomePage() {
       <header className="container mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-2">
           <div>
-            <h1 className="text-3xl font-headline font-bold">{greeting}</h1>
-            <p className="text-muted-foreground">We hope you're in a good mood to dine.</p>
+          <h1 className="text-3xl font-headline font-bold">{greeting} {displayName}</h1>
+          <p className="text-muted-foreground">We hope you're in a good mood to dine.</p>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/cart">

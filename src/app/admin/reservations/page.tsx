@@ -7,9 +7,11 @@ import { collection, onSnapshot, doc, updateDoc, query, orderBy } from 'firebase
 import type { reservation } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function AdminReservationsPage() {
   const [reservations, setReservations] = useState<reservation[]>([]);
@@ -47,7 +49,15 @@ export default function AdminReservationsPage() {
       </header>
       <Card>
         <CardHeader>
-          <CardTitle>All Reservations</CardTitle>
+            <div className="flex justify-between items-center">
+                <CardTitle>All Reservations</CardTitle>
+                <Link href="/admin/reservations/settings">
+                    <Button variant="outline">
+                        <Settings className="mr-2 h-4 w-4" />
+                        Settings
+                    </Button>
+                </Link>
+            </div>
         </CardHeader>
         <CardContent>
           <Table>
