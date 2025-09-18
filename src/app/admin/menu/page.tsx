@@ -39,6 +39,7 @@ export default function AdminMenuPage() {
     const [foodItemFiles, setFoodItemFiles] = useState<FoodItemFiles>({ extraImages: [] });
     
     const [currentCategory, setCurrentCategory] = useState<Partial<category> | null>(null);
+    const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
     const [itemToDelete, setItemToDelete] = useState<{ id: string; type: 'food' | 'category' } | null>(null);
     
     const { toast } = useToast();
@@ -68,7 +69,8 @@ export default function AdminMenuPage() {
     };
     
     const handleOpenCategoryDialog = (category: category | null = null) => {
-        setCurrentCategory(category || { name: '', image: '' });
+        setCurrentCategory(category || { name: '', image: 'https://placehold.co/100x100' });
+        setCategoryImageFile(null);
         setIsCategoryDialogOpen(true);
     };
 
@@ -119,17 +121,29 @@ export default function AdminMenuPage() {
     };
     
     const handleSaveCategory = async () => {
-        if (!currentCategory) return;
+        if (!currentCategory || !currentCategory.name) return;
+
+        let dataToSave: Partial<category> = { ...currentCategory };
+        const categoryId = dataToSave.id || doc(collection(db, 'categories')).id;
+
         try {
-            if (currentCategory.id) {
-                const { id, ...data } = currentCategory;
-                await updateDoc(doc(db, 'categories', id), data);
+            if (categoryImageFile) {
+                const imagePath = `categories/${categoryId}/image_${categoryImageFile.name}`;
+                dataToSave.image = await uploadFile(categoryImageFile, imagePath);
+            }
+
+            const { id, ...dataForFirestore } = dataToSave;
+
+            if (id) {
+                await updateDoc(doc(db, 'categories', id), dataForFirestore);
                 toast({ title: 'Success', description: 'Category updated.' });
             } else {
-                await addDoc(collection(db, 'categories'), { ...currentCategory });
+                await addDoc(collection(db, 'categories'), dataForFirestore);
                 toast({ title: 'Success', description: 'Category added.' });
             }
             setIsCategoryDialogOpen(false);
+            setCurrentCategory(null);
+            setCategoryImageFile(null);
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         }
@@ -175,6 +189,18 @@ export default function AdminMenuPage() {
             const reader = new FileReader();
             reader.onload = (event) => {
                 handleFoodItemChange('imageUrl', event.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleCategoryImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setCategoryImageFile(file);
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                 setCurrentCategory(p => p ? {...p, image: event.target?.result as string} : null);
             };
             reader.readAsDataURL(file);
         }
@@ -369,7 +395,13 @@ export default function AdminMenuPage() {
                     <DialogHeader><DialogTitle>{currentCategory?.id ? 'Edit' : 'Add'} Category</DialogTitle></DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2"><Label>Name</Label><Input value={currentCategory?.name} onChange={(e) => setCurrentCategory(p => p ? {...p, name: e.target.value} : null)} /></div>
-                        <div className="space-y-2"><Label>Image URL</Label><Input value={currentCategory?.image} onChange={(e) => setCurrentCategory(p => p ? {...p, image: e.target.value} : null)} placeholder="For display in category list" /></div>
+                        <div className="space-y-2">
+                            <Label>Image</Label>
+                            <div className="flex items-center gap-4">
+                                {currentCategory?.image && <Image src={currentCategory.image} alt="preview" width={64} height={64} className="rounded-md object-cover h-16 w-16" />}
+                                <Input type="file" onChange={handleCategoryImageChange} />
+                            </div>
+                        </div>
                     </div>
                     <DialogFooter><Button onClick={handleSaveCategory}>Save</Button></DialogFooter>
                 </DialogContent>
@@ -393,3 +425,5 @@ export default function AdminMenuPage() {
         </>
     );
 }
+
+    
