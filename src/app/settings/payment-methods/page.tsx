@@ -4,14 +4,17 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, MoreVertical, PlusCircle, Loader2 } from 'lucide-react';
+import { ChevronLeft, MoreVertical, PlusCircle, Loader2, Edit, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { db } from '@/lib/firebase';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import type { wallet } from '@/lib/types';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function PaymentMethodsPage() {
@@ -19,6 +22,9 @@ export default function PaymentMethodsPage() {
   const { user } = useOnboarding();
   const [wallets, setWallets] = useState<wallet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [walletToDelete, setWalletToDelete] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
@@ -40,6 +46,25 @@ export default function PaymentMethodsPage() {
         setIsLoading(false);
     }
   }, [user]);
+
+  const handleDeleteClick = (id: string) => {
+    setWalletToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!walletToDelete || !user) return;
+    try {
+        await deleteDoc(doc(db, 'users', user.uid, 'wallets', walletToDelete));
+        toast({ title: 'Success', description: 'Payment method has been deleted.' });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } finally {
+        setIsDeleteDialogOpen(false);
+        setWalletToDelete(null);
+    }
+  };
+
 
   return (
     <div className="food-pattern min-h-screen pb-24">
@@ -64,9 +89,23 @@ export default function PaymentMethodsPage() {
                   <p className="font-bold text-lg">{wallet.name}</p>
                   <p className="text-sm text-muted-foreground">{wallet.network} - {wallet.number}</p>
                 </div>
-                <Button size="icon" variant="ghost" className="rounded-full text-muted-foreground">
-                  <MoreVertical className="h-5 w-5" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="ghost" className="rounded-full text-muted-foreground">
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => router.push(`/settings/payment-methods/${wallet.id}/edit`)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      <span>Edit</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleDeleteClick(wallet.id)} className="text-destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      <span>Delete</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </Card>
             ))
           ) : (
@@ -74,13 +113,26 @@ export default function PaymentMethodsPage() {
           )}
 
           <Link href="/settings/payment-methods/add" passHref>
-             <button className="w-full flex items-center justify-center gap-2 p-4 text-center text-primary font-semibold border-2 border-dashed border-primary/50 rounded-2xl hover:bg-primary/5 transition-colors">
+             <button className="mt-4 w-full flex items-center justify-center gap-2 p-4 text-center text-primary font-semibold border-2 border-dashed border-primary/50 rounded-2xl hover:bg-primary/5 transition-colors">
                 <PlusCircle className="w-5 h-5" />
                 <span>Add new wallet</span>
             </button>
           </Link>
         </div>
       </main>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>This action cannot be undone. This will permanently delete this payment method.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
