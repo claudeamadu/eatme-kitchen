@@ -132,20 +132,24 @@ export default function MenuPage() {
             </header>
             
             <section className="mb-6">
-                <h2 className="text-xl font-bold font-headline container mx-auto px-4 mb-2">Category</h2>
-                 <div className="flex overflow-x-auto space-x-3 px-4 pb-2 -mx-4">
-                    {categories.map((category) => (
-                        <button key={category.id} onClick={() => setActiveCategory(category.name)}
-                            className={cn("flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full transition-colors",
-                                activeCategory === category.name ? 'bg-destructive text-destructive-foreground' : 'bg-card'
-                            )}
-                        >
-                            {category.name !== 'All' && category.image && (
-                                <Image src={category.image} alt={category.name} width={28} height={28} className="rounded-full w-7 h-7 object-cover"/>
-                            )}
-                            <span className="font-semibold text-sm">{category.name}</span>
-                        </button>
-                    ))}
+                <div className="container mx-auto px-4">
+                    <h2 className="text-xl font-bold font-headline mb-2">Category</h2>
+                </div>
+                 <div className="overflow-x-auto">
+                    <div className="flex space-x-3 px-4 pb-2">
+                        {categories.map((category) => (
+                            <button key={category.id} onClick={() => setActiveCategory(category.name)}
+                                className={cn("flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full transition-colors",
+                                    activeCategory === category.name ? 'bg-destructive text-destructive-foreground' : 'bg-card'
+                                )}
+                            >
+                                {category.name !== 'All' && category.image && (
+                                    <Image src={category.image} alt={category.name} width={28} height={28} className="rounded-full w-7 h-7 object-cover"/>
+                                )}
+                                <span className="font-semibold text-sm">{category.name}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </section>
 
