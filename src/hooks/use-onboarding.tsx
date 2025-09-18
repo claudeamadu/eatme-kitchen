@@ -39,7 +39,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
-  const [splashShown, setSplashShown] = useState(false);
+  const [splashShown, setSplashShown] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [authLoaded, setAuthLoaded] = useState(false);
@@ -96,7 +96,11 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const value = { hasCompletedOnboarding, completeOnboarding, user };
   
   const renderContent = () => {
-    if (!isLoaded || !splashShown || !authLoaded) {
+    if (!isLoaded || !authLoaded) {
+      return <SplashScreen />;
+    }
+    
+    if (!splashShown) {
       return <SplashScreen />;
     }
 
