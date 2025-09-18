@@ -118,7 +118,11 @@ export default function OrderDetailPage() {
     }
     setIsSubmitting(true);
     
-    const ratedItems = Object.entries(ratings).filter(([, value]) => value.rating > 0);
+    const ratedItems = order.items.map(item => ({
+        foodId: item.id.split('-')[0],
+        reviewData: ratings[item.id.split('-')[0]]
+    })).filter(item => item.reviewData && item.reviewData.rating > 0);
+
 
     if (ratedItems.length === 0) {
         toast({ variant: 'destructive', title: 'No ratings provided', description: 'Please rate at least one item before submitting.' });
@@ -127,17 +131,19 @@ export default function OrderDetailPage() {
     }
 
     try {
-        for (const [foodId, reviewData] of ratedItems) {
-            await addDoc(collection(db, 'reviews'), {
-                uid: user.uid,
-                foodId: foodId,
-                orderId: order.id,
-                rating: reviewData.rating,
-                text: reviewData.text,
-                createdAt: serverTimestamp(),
-                userDisplayName: user.displayName || 'Anonymous',
-                userPhotoURL: user.photoURL || '',
-            });
+        for (const { foodId, reviewData } of ratedItems) {
+            if (reviewData) {
+                await addDoc(collection(db, 'reviews'), {
+                    uid: user.uid,
+                    foodId: foodId,
+                    orderId: order.id,
+                    rating: reviewData.rating,
+                    text: reviewData.text,
+                    createdAt: serverTimestamp(),
+                    userDisplayName: user.displayName || 'Anonymous',
+                    userPhotoURL: user.photoURL || '',
+                });
+            }
         }
         
         const loyaltyRef = doc(db, 'users', user.uid, 'loyalty', 'data');
@@ -148,7 +154,7 @@ export default function OrderDetailPage() {
                 points: increment(totalPoints),
                 reviews: increment(ratedItems.length)
             }, { merge: true });
-            });
+        });
         
         setIsRatingSheetOpen(false);
         toast({
