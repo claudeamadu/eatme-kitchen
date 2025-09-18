@@ -35,7 +35,7 @@ export function CartItemCard({ item }: CartItemCardProps) {
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
-        <p className="text-destructive font-bold text-base mt-1">GHC {item.price.toFixed(2)}</p>
+        <p className="text-destructive font-bold text-base mt-1">₵{item.price.toFixed(2)}</p>
       </div>
       <div className="flex flex-col items-center gap-1">
         <Button 

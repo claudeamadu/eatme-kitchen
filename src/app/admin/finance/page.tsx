@@ -71,7 +71,7 @@ export default function AdminFinancePage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader><CardTitle>Total Revenue</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold">GHC {financialSummary.totalRevenue.toFixed(2)}</p></CardContent>
+          <CardContent><p className="text-3xl font-bold">₵{financialSummary.totalRevenue.toFixed(2)}</p></CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle>Completed Orders</CardTitle></CardHeader>
@@ -79,7 +79,7 @@ export default function AdminFinancePage() {
         </Card>
         <Card>
           <CardHeader><CardTitle>Average Order Value</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold">GHC {financialSummary.averageOrderValue.toFixed(2)}</p></CardContent>
+          <CardContent><p className="text-3xl font-bold">₵{financialSummary.averageOrderValue.toFixed(2)}</p></CardContent>
         </Card>
       </div>
 
@@ -94,7 +94,7 @@ export default function AdminFinancePage() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
-                <Tooltip formatter={(value) => `GHC ${Number(value).toFixed(2)}`} />
+                <Tooltip formatter={(value) => `₵${Number(value).toFixed(2)}`} />
                 <Legend />
                 <Bar dataKey="sales" fill="#f43f5e" name="Sales (GHC)" />
               </BarChart>

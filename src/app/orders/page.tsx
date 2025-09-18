@@ -50,7 +50,7 @@ const OrderCard = ({ order }: { order: order }) => {
                 </span>
               )}
             </h3>
-            <p className="text-lg font-bold text-destructive my-2">GHC {order.total.toFixed(2)}</p>
+            <p className="text-lg font-bold text-destructive my-2">₵{order.total.toFixed(2)}</p>
             <div className="flex items-center gap-2">
               {displayItems.map((item, index) => (
                 <Image

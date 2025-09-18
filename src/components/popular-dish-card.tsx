@@ -42,11 +42,11 @@ export function PopularDishCard({ item }: PopularDishCardProps) {
             const minPrice = Math.min(...prices);
             const maxPrice = Math.max(...prices);
             if (minPrice === maxPrice) {
-                return `GHC ${minPrice.toFixed(2)}`;
+                return `₵${minPrice.toFixed(2)}`;
             }
-            return `GHC ${minPrice.toFixed(2)} - ${maxPrice.toFixed(2)}`;
+            return `₵${minPrice.toFixed(2)} - ${maxPrice.toFixed(2)}`;
         }
-        return `GHC ${item.price.toFixed(2)}`;
+        return `₵${item.price.toFixed(2)}`;
     };
 
     return (

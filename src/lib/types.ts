@@ -141,5 +141,5 @@ export interface review {
     text: string;
     createdAt: Timestamp;
     userDisplayName: string;
-    userPhotoURL?: string;
+userPhotoURL?: string;
 }

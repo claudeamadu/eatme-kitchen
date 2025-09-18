@@ -56,7 +56,7 @@ const MenuItemCard = ({ item }: { item: food_item }) => {
                 <div className="flex-grow">
                     <h3 className="font-bold font-headline text-lg">{item.title}</h3>
                     <p className="text-muted-foreground text-sm line-clamp-2">{item.description}</p>
-                    <p className="text-destructive font-bold text-base my-2">GHC {item.price.toFixed(2)}</p>
+                    <p className="text-destructive font-bold text-base my-2">₵{item.price.toFixed(2)}</p>
                 </div>
                 {!isCustomizable && (
                     <Button 

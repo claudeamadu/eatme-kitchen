@@ -291,7 +291,7 @@ export default function AdminMenuPage() {
                                 {foodItems.map(item => (
                                     <TableRow key={item.id} className={item.isDeleted ? 'opacity-50' : ''}>
                                         <TableCell>{item.title}</TableCell>
-                                        <TableCell>GHC {item.price.toFixed(2)}</TableCell>
+                                        <TableCell>₵{item.price.toFixed(2)}</TableCell>
                                         <TableCell>{item.cuisine}</TableCell>
                                         <TableCell>{item.isDeleted ? 'Deleted' : 'Active'}</TableCell>
                                         <TableCell className="space-x-2">

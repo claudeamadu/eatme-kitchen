@@ -128,7 +128,7 @@ export default function ItemPage() {
         const cartItemName = selectedSize ? `${item.title} (${selectedSize})` : item.title;
 
         addToCart({
-          id: `${item.id}-${selectedSize}-${selectedExtras.join('-')}`,
+          id: id as string,
           name: cartItemName,
           price: totalItemPrice,
           imageUrl: item.imageUrl,
@@ -138,7 +138,7 @@ export default function ItemPage() {
         });
     } else {
         addToCart({
-            id: item.id,
+            id: id as string,
             name: item.title,
             price: item.price,
             imageUrl: item.imageUrl,
@@ -194,7 +194,7 @@ export default function ItemPage() {
           <p className="text-muted-foreground text-base mb-6">{item.description}</p>
           
           {!isCustomizable && (
-            <p className="text-2xl font-bold text-destructive mb-6">GHC {item.price.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-destructive mb-6">₵{item.price.toFixed(2)}</p>
           )}
 
           {item.sizes && item.sizes.length > 0 && (
@@ -210,7 +210,7 @@ export default function ItemPage() {
                       "peer-data-[state=checked]:bg-destructive peer-data-[state=checked]:text-destructive-foreground"
                     )}>
                       <span className="font-bold">{size.name}</span>
-                      <span className="text-sm">GHC {size.price.toFixed(2)}</span>
+                      <span className="text-sm">₵{size.price.toFixed(2)}</span>
                     </Label>
                   </div>
                 ))}
@@ -237,7 +237,7 @@ export default function ItemPage() {
                       </div>
                     </div>
                     <p className="font-semibold text-sm">{extra.name}</p>
-                     <p className={cn("font-bold text-xs", selectedExtras.includes(extra.name) ? "text-destructive": "text-muted-foreground")}>GHC {extra.price.toFixed(2)}</p>
+                     <p className={cn("font-bold text-xs", selectedExtras.includes(extra.name) ? "text-destructive": "text-muted-foreground")}>₵{extra.price.toFixed(2)}</p>
                   </div>
                 ))}
               </div>
@@ -290,7 +290,7 @@ export default function ItemPage() {
           <Button size="lg" className="flex-grow rounded-full" onClick={handleAddToCart}>
             <div className="flex justify-between w-full items-center">
                 <span>Add to cart</span>
-                <span>GHC {calculateTotal().toFixed(2)}</span>
+                <span>₵{calculateTotal().toFixed(2)}</span>
             </div>
           </Button>
         </div>

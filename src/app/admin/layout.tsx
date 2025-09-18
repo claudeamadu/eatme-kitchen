@@ -3,7 +3,7 @@
 
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { useRouter } from 'next/navigation';
-import { Loader2, ShieldAlert, ShoppingBag, Users, Utensils, MessageSquare, BarChart, LogOut, Megaphone, Calendar } from 'lucide-react';
+import { Loader2, ShieldAlert, ShoppingBag, Users, Utensils, MessageSquare, BarChart, LogOut, Megaphone, Calendar, ReceiptText } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,7 @@ import { auth } from '@/lib/firebase';
 
 const navItems = [
     { href: '/admin', label: 'Dashboard', icon: ShoppingBag },
+    { href: '/admin/orders', label: 'Orders', icon: ReceiptText },
     { href: '/admin/menu', label: 'Menu', icon: Utensils },
     { href: '/admin/reservations', label: 'Reservations', icon: Calendar },
     { href: '/admin/promos', label: 'Promos', icon: Megaphone },
@@ -69,7 +70,7 @@ export default function AdminLayout({
                 <nav className="space-y-2">
                 {navItems.map(item => (
                      <Link href={item.href} key={item.href}>
-                        <Button variant={pathname === item.href ? 'secondary' : 'ghost'} className="w-full justify-start">
+                        <Button variant={pathname.startsWith(item.href) && (item.href !== '/admin' || pathname === '/admin') ? 'secondary' : 'ghost'} className="w-full justify-start">
                             <item.icon className="mr-2 h-4 w-4" /> {item.label}
                         </Button>
                     </Link>

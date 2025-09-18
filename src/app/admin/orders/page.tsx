@@ -11,12 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { Loader2, View } from 'lucide-react';
-import { useOnboarding } from '@/hooks/use-onboarding';
 import Link from 'next/link';
 
-export default function AdminPage() {
-  const { user } = useOnboarding();
-
+export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<order[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,15 +48,6 @@ export default function AdminPage() {
     });
   };
 
-  const summaryStats = useMemo(() => ({
-    totalOrders: orders.length,
-    ongoingOrders: orders.filter(o => o.status === 'Ongoing').length,
-    completedOrders: orders.filter(o => o.status === 'Completed').length,
-    totalUsers: users.length,
-  }), [orders, users]);
-  
-  const recentOrders = useMemo(() => orders.slice(0, 5), [orders]);
-
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -71,35 +59,13 @@ export default function AdminPage() {
   return (
     <>
       <header className="mb-8">
-        <h2 className="text-3xl font-bold">Dashboard</h2>
-        <p className="text-muted-foreground">Welcome back, {user?.displayName || user?.email}</p>
+        <h2 className="text-3xl font-bold">All Orders</h2>
+        <p className="text-muted-foreground">Manage and track all customer orders.</p>
       </header>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 my-8">
-        <Card>
-          <CardHeader><CardTitle>Total Orders</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold">{summaryStats.totalOrders}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle>Ongoing Orders</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold">{summaryStats.ongoingOrders}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle>Completed Orders</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold">{summaryStats.completedOrders}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle>Total Users</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold">{summaryStats.totalUsers}</p></CardContent>
-        </Card>
-      </div>
-
+      
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Recent Orders</CardTitle>
-            <Link href="/admin/orders" className="text-sm text-primary hover:underline">View all orders</Link>
-          </div>
+          <CardTitle>Orders</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -114,7 +80,7 @@ export default function AdminPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentOrders.map(order => (
+              {orders.map(order => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">{order.id.slice(0, 6)}</TableCell>
                   <TableCell>{format(order.createdAt.toDate(), 'PPpp')}</TableCell>
@@ -136,7 +102,7 @@ export default function AdminPage() {
                       </SelectContent>
                     </Select>
                   </TableCell>
-                   <TableCell>
+                  <TableCell>
                      <Link href={`/admin/orders/${order.id}`}>
                         <Button variant="outline" size="icon">
                             <View className="h-4 w-4" />

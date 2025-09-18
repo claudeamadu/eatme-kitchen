@@ -70,7 +70,7 @@ export default function AdminReservationsPage() {
                   <TableCell>{r.date} at {r.time}</TableCell>
                   <TableCell>{r.guests}</TableCell>
                   <TableCell>{r.occasion}</TableCell>
-                  <TableCell>GHC {r.total.toFixed(2)}</TableCell>
+                  <TableCell>₵{r.total.toFixed(2)}</TableCell>
                   <TableCell>
                     <Select value={r.status} onValueChange={(value) => handleStatusChange(r.id, value)}>
                       <SelectTrigger className="w-32">

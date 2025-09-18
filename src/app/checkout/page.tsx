@@ -131,7 +131,7 @@ function CheckoutComponent() {
         ? "Your order is confirmed! You'll receive updates as it progresses. Track the status anytime on the Orders page."
         : "Your table has been booked. We're excited to have you! You can view your reservation details on the homepage.";
     const getModalActionText = () => isFood ? 'Track Order' : 'Done';
-    const getModalImage = () => isFood ? 'https://picsum.photos/300/200' : 'https://picsum.photos/seed/reservation/300/200';
+    const getModalImage = () => '/assets/Confirmed-pana.png';
     const getModalImageHint = () => isFood ? 'order confirmation' : 'reservation confirmation celebration';
 
 
@@ -153,21 +153,21 @@ function CheckoutComponent() {
                         <div className="space-y-3 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Amount</span>
-                                <span className="font-medium">GHC {total.toFixed(2)}</span>
+                                <span className="font-medium">₵{total.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Fee</span>
-                                <span className="font-medium">GHC {fee.toFixed(2)}</span>
+                                <span className="font-medium">₵{fee.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">E - Levy</span>
-                                <span className="font-medium">GHC {eLevy.toFixed(2)}</span>
+                                <span className="font-medium">₵{eLevy.toFixed(2)}</span>
                             </div>
                         </div>
                         <div className="border-t my-4"></div>
                         <div className="flex justify-between items-center">
                             <span className="text-muted-foreground text-sm">You will be charged</span>
-                            <span className="font-bold text-xl">GHC {finalTotal.toFixed(2)}</span>
+                            <span className="font-bold text-xl">₵{finalTotal.toFixed(2)}</span>
                         </div>
                     </CardContent>
                 </Card>

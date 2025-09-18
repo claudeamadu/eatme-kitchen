@@ -78,16 +78,16 @@ export default function CartPage() {
           <div className="space-y-2 text-base font-medium">
             <div className="flex justify-between text-muted-foreground">
               <span>Cart Total</span>
-              <span>GHC {subtotal.toFixed(2)}</span>
+              <span>₵{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>Loyalty Discount</span>
-              <span className="text-destructive">- GHC {appliedAmount.toFixed(2)}</span>
+              <span className="text-destructive">- ₵{appliedAmount.toFixed(2)}</span>
             </div>
             <div className="h-px bg-border my-2"></div>
             <div className="flex justify-between font-bold text-lg text-foreground">
               <span>Total</span>
-              <span>GHC {total.toFixed(2)}</span>
+              <span>₵{total.toFixed(2)}</span>
             </div>
           </div>
           <Link href="/checkout?type=food" passHref className="block mt-4">

@@ -35,7 +35,7 @@ export function DailySpecialCard({ recipe }: DailySpecialCardProps) {
                 {recipe.description}
             </CardDescription>
             <div className="flex justify-between items-center">
-                <p className="text-destructive font-bold text-lg">GHC {recipe.nutrition.calories.split(' ')[0]}</p>
+                <p className="text-destructive font-bold text-lg">₵{recipe.nutrition.calories.split(' ')[0]}</p>
                 <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-red-500">
                     <Heart className="h-5 w-5" />
                 </Button>

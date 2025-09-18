@@ -60,17 +60,17 @@ export default function ReservationSummaryPage() {
                         <div className="space-y-3">
                              <div className="flex justify-between">
                                 <span className="text-muted-foreground">Duration</span>
-                                <span className="font-medium">GHC {durationCost.toFixed(2)}</span>
+                                <span className="font-medium">₵{durationCost.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Number of guests</span>
-                                <span className="font-medium">GHC {guestsCost.toFixed(2)}</span>
+                                <span className="font-medium">₵{guestsCost.toFixed(2)}</span>
                             </div>
                         </div>
                         <div className="border-t my-4"></div>
                         <div className="flex justify-between items-center">
                             <span className="font-bold">TOTAL</span>
-                            <span className="font-bold text-xl">GHC {total.toFixed(2)}</span>
+                            <span className="font-bold text-xl">₵{total.toFixed(2)}</span>
                         </div>
                     </CardContent>
                 </Card>

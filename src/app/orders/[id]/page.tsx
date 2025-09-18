@@ -235,7 +235,7 @@ export default function OrderDetailPage() {
                              />
                              <div className="flex-grow">
                                 <p className="font-bold">{item.name}</p>
-                                <p className="text-destructive font-semibold">GHC {item.price.toFixed(2)}</p>
+                                <p className="text-destructive font-semibold">₵{item.price.toFixed(2)}</p>
                              </div>
                              <span className="font-medium text-muted-foreground">x{item.quantity}</span>
                         </li>
@@ -246,7 +246,7 @@ export default function OrderDetailPage() {
         
         <Card className="rounded-2xl shadow-lg">
             <CardContent className="p-6 divide-y">
-                <DetailRow label="Total" value={`GHC ${total.toFixed(2)}`} valueClass="text-xl font-bold text-foreground" />
+                <DetailRow label="Total" value={`₵${total.toFixed(2)}`} valueClass="text-xl font-bold text-foreground" />
             </CardContent>
         </Card>
 
