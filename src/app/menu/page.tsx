@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Image from 'next/image';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import type { food_item, category } from '@/lib/types';
+import { collection, onSnapshot, query, where, doc, getDoc } from 'firebase/firestore';
+import type { food_item, category, promo } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Bell, Search, ShoppingCart, Plus, Loader2 } from 'lucide-react';
@@ -13,29 +13,44 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { useCart } from '@/hooks/use-cart';
+import { useSearchParams } from 'next/navigation';
 
-const MenuItemCard = ({ item }: { item: food_item }) => {
+const calculateDiscountedPrice = (price: number, promo: promo | null): number => {
+    if (!promo || !promo.discountType || promo.discountType === 'none' || !promo.discountValue) {
+        return price;
+    }
+    if (promo.discountType === 'fixed') {
+        return Math.max(0, price - promo.discountValue);
+    }
+    if (promo.discountType === 'percentage') {
+        return price * (1 - promo.discountValue / 100);
+    }
+    return price;
+};
+
+const MenuItemCard = ({ item, promo }: { item: food_item, promo: promo | null }) => {
     const { addToCart } = useCart();
-    const href = `/item/${item.id}`;
+    const href = `/item/${item.id}${promo ? `?promo=${promo.id}` : ''}`;
       
     const isCustomizable = !!(item.sizes?.length || item.extras?.length);
+
+    const originalPrice = item.price;
+    const discountedPrice = calculateDiscountedPrice(originalPrice, promo);
+    const hasDiscount = discountedPrice < originalPrice;
 
     const handleAddToCart = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         
         if (isCustomizable) {
-            // If it's customizable, we should navigate to the detail page
-            // so the user can select options. A Link wrapper already handles this.
-            // But if for some reason a plus button is shown, we can navigate them.
-            // For now, the button is hidden for customizable items.
+            // Let the Link handle navigation
             return;
         }
 
         addToCart({
             id: item.id,
             name: item.title,
-            price: item.price,
+            price: discountedPrice,
             imageUrl: item.imageUrl,
             imageHint: item.imageHint,
             quantity: 1,
@@ -56,7 +71,10 @@ const MenuItemCard = ({ item }: { item: food_item }) => {
                 <div className="flex-grow">
                     <h3 className="font-bold font-headline text-lg">{item.title}</h3>
                     <p className="text-muted-foreground text-sm line-clamp-2">{item.description}</p>
-                    <p className="text-destructive font-bold text-base my-2">₵{item.price.toFixed(2)}</p>
+                    <div className="flex items-center gap-2 my-2">
+                        <p className="text-destructive font-bold text-base">₵{discountedPrice.toFixed(2)}</p>
+                        {hasDiscount && <p className="text-muted-foreground line-through text-sm">₵{originalPrice.toFixed(2)}</p>}
+                    </div>
                 </div>
                 {!isCustomizable && (
                     <Button 
@@ -73,13 +91,31 @@ const MenuItemCard = ({ item }: { item: food_item }) => {
     );
 };
 
-
-export default function MenuPage() {
+function MenuComponent() {
     const [activeCategory, setActiveCategory] = useState('All');
     const [foodItems, setFoodItems] = useState<food_item[]>([]);
     const [categories, setCategories] = useState<category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [activePromo, setActivePromo] = useState<promo | null>(null);
+
+    const searchParams = useSearchParams();
+    const promoId = searchParams.get('promo');
+
+    useEffect(() => {
+        if (promoId) {
+            const fetchPromo = async () => {
+                const promoRef = doc(db, 'promos', promoId);
+                const promoSnap = await getDoc(promoRef);
+                if (promoSnap.exists()) {
+                    setActivePromo({ id: promoSnap.id, ...promoSnap.data() } as promo);
+                }
+            };
+            fetchPromo();
+        } else {
+            setActivePromo(null);
+        }
+    }, [promoId]);
 
     useEffect(() => {
         const foodQuery = query(collection(db, 'foodItems'), where('isDeleted', '!=', true));
@@ -162,7 +198,7 @@ export default function MenuPage() {
                     <div className="space-y-4">
                         {filteredFoodItems.length > 0 ? (
                             filteredFoodItems.map(item => (
-                                <MenuItemCard key={item.id} item={item} />
+                                <MenuItemCard key={item.id} item={item} promo={activePromo} />
                             ))
                         ) : (
                             <p className="text-center text-muted-foreground py-8">No food items found.</p>
@@ -171,5 +207,13 @@ export default function MenuPage() {
                 )}
             </main>
         </div>
+    );
+}
+
+export default function MenuPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin"/></div>}>
+            <MenuComponent />
+        </Suspense>
     );
 }

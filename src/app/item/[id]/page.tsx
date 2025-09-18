@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Image from 'next/image';
-import { notFound, useRouter, useParams } from 'next/navigation';
+import { notFound, useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -12,24 +12,55 @@ import { cn } from '@/lib/utils';
 import { useCart } from '@/hooks/use-cart';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
-import type { food_item, review } from '@/lib/types';
+import type { food_item, review, promo } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 
-export default function ItemPage() {
+const calculateDiscountedPrice = (price: number, promo: promo | null): number => {
+    if (!promo || !promo.discountType || promo.discountType === 'none' || !promo.discountValue) {
+        return price;
+    }
+    if (promo.discountType === 'fixed') {
+        return Math.max(0, price - promo.discountValue);
+    }
+    if (promo.discountType === 'percentage') {
+        return price * (1 - promo.discountValue / 100);
+    }
+    return price;
+};
+
+function ItemPageComponent() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+
   const { id } = params;
+  const promoId = searchParams.get('promo');
+  
   const { addToCart } = useCart();
   const [item, setItem] = useState<food_item | null>(null);
   const [reviews, setReviews] = useState<review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activePromo, setActivePromo] = useState<promo | null>(null);
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   
   const isCustomizable = !!(item?.sizes?.length || item?.extras?.length);
+
+  useEffect(() => {
+    if (promoId) {
+        const fetchPromo = async () => {
+            const promoRef = doc(db, 'promos', promoId);
+            const promoSnap = await getDoc(promoRef);
+            if (promoSnap.exists()) {
+                setActivePromo({ id: promoSnap.id, ...promoSnap.data() } as promo);
+            }
+        };
+        fetchPromo();
+    }
+  }, [promoId]);
 
   useEffect(() => {
     if (!id || typeof id !== 'string') {
@@ -107,51 +138,64 @@ export default function ItemPage() {
 
   const calculateTotal = () => {
     if (!item) return 0;
-    if (!isCustomizable) {
-        return item.price * quantity;
-    }
-    const basePrice = item.sizes?.find(s => s.name === selectedSize)?.price || item.price || 0;
+
+    let totalPerItem = 0;
     
-    const extrasPrice = selectedExtras.reduce((total, extraName) => {
-      const extra = item.extras?.find(e => e.name === extraName);
-      return total + (extra?.price || 0);
-    }, 0);
-    return (basePrice + extrasPrice) * quantity;
+    if (!isCustomizable) {
+        totalPerItem = calculateDiscountedPrice(item.price, activePromo);
+    } else {
+        const basePrice = item.sizes?.find(s => s.name === selectedSize)?.price || item.price || 0;
+        const discountedBasePrice = calculateDiscountedPrice(basePrice, activePromo);
+        
+        const extrasPrice = selectedExtras.reduce((total, extraName) => {
+          const extra = item.extras?.find(e => e.name === extraName);
+          // Assuming extras are not discounted for simplicity
+          return total + (extra?.price || 0);
+        }, 0);
+        totalPerItem = discountedBasePrice + extrasPrice;
+    }
+    return totalPerItem * quantity;
   };
   
   const handleAddToCart = () => {
     if (!item) return;
     
-    if (isCustomizable) {
-        const totalItemPrice = calculateTotal() / quantity;
-        const extrasString = selectedExtras.join(', ');
-        const cartItemName = selectedSize ? `${item.title} (${selectedSize})` : item.title;
-
-        addToCart({
-          id: id as string,
-          name: cartItemName,
-          price: totalItemPrice,
-          imageUrl: item.imageUrl,
-          imageHint: item.imageHint,
-          extras: extrasString,
-          quantity: quantity,
-        });
-    } else {
-        addToCart({
-            id: id as string,
-            name: item.title,
-            price: item.price,
-            imageUrl: item.imageUrl,
-            imageHint: item.imageHint,
-            quantity: quantity,
-        });
+    const totalItemPrice = calculateTotal() / quantity;
+    let cartItemName = item.title;
+    const details: string[] = [];
+    
+    if (selectedSize) {
+        details.push(selectedSize);
     }
+    if (selectedExtras.length > 0) {
+        details.push(...selectedExtras);
+    }
+
+    const extrasString = details.join(', ');
+    
+    if(isCustomizable && selectedSize) {
+       cartItemName = `${item.title} (${selectedSize})`;
+    }
+
+    addToCart({
+      id: id as string,
+      name: cartItemName,
+      price: totalItemPrice,
+      imageUrl: item.imageUrl,
+      imageHint: item.imageHint,
+      extras: extrasString,
+      quantity: quantity,
+    });
   }
   
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'A';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   }
+
+  const originalPrice = item.price;
+  const discountedPrice = calculateDiscountedPrice(originalPrice, activePromo);
+  const hasDiscount = !isCustomizable && discountedPrice < originalPrice;
 
   return (
     <div className="relative min-h-screen food-pattern">
@@ -193,7 +237,14 @@ export default function ItemPage() {
           </div>
           <p className="text-muted-foreground text-base mb-6">{item.description}</p>
           
-          {!isCustomizable && (
+          {hasDiscount && (
+            <div className="flex items-baseline gap-2 mb-6">
+              <p className="text-2xl font-bold text-destructive">₵{discountedPrice.toFixed(2)}</p>
+              <p className="text-lg font-bold text-muted-foreground line-through">₵{originalPrice.toFixed(2)}</p>
+            </div>
+          )}
+
+          {!isCustomizable && !hasDiscount && (
             <p className="text-2xl font-bold text-destructive mb-6">₵{item.price.toFixed(2)}</p>
           )}
 
@@ -201,19 +252,25 @@ export default function ItemPage() {
             <section className="mb-6">
               <h2 className="text-xl font-bold font-headline mb-3">Available Sizes</h2>
               <RadioGroup value={selectedSize || ''} onValueChange={setSelectedSize} className="grid grid-cols-3 gap-3">
-                {item.sizes.map(size => (
-                  <div key={size.name}>
-                    <RadioGroupItem value={size.name} id={size.name} className="peer sr-only" />
-                    <Label htmlFor={size.name} className={cn(
-                      "flex flex-col items-center justify-center rounded-xl p-3 border-2 border-transparent transition-all cursor-pointer",
-                      "peer-data-[state=unchecked]:bg-card peer-data-[state=unchecked]:shadow-sm",
-                      "peer-data-[state=checked]:bg-destructive peer-data-[state=checked]:text-destructive-foreground"
-                    )}>
-                      <span className="font-bold">{size.name}</span>
-                      <span className="text-sm">₵{size.price.toFixed(2)}</span>
-                    </Label>
-                  </div>
-                ))}
+                {item.sizes.map(size => {
+                  const finalPrice = calculateDiscountedPrice(size.price, activePromo);
+                  return (
+                    <div key={size.name}>
+                      <RadioGroupItem value={size.name} id={size.name} className="peer sr-only" />
+                      <Label htmlFor={size.name} className={cn(
+                        "flex flex-col items-center justify-center rounded-xl p-3 border-2 border-transparent transition-all cursor-pointer",
+                        "peer-data-[state=unchecked]:bg-card peer-data-[state=unchecked]:shadow-sm",
+                        "peer-data-[state=checked]:bg-destructive peer-data-[state=checked]:text-destructive-foreground"
+                      )}>
+                        <span className="font-bold">{size.name}</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-sm">₵{finalPrice.toFixed(2)}</span>
+                          {finalPrice < size.price && <span className="text-xs line-through">₵{size.price.toFixed(2)}</span>}
+                        </div>
+                      </Label>
+                    </div>
+                  )
+                })}
               </RadioGroup>
             </section>
           )}
@@ -237,7 +294,7 @@ export default function ItemPage() {
                       </div>
                     </div>
                     <p className="font-semibold text-sm">{extra.name}</p>
-                     <p className={cn("font-bold text-xs", selectedExtras.includes(extra.name) ? "text-destructive": "text-muted-foreground")}>₵{extra.price.toFixed(2)}</p>
+                     <p className={cn("font-bold text-xs", selectedExtras.includes(extra.name) ? "text-destructive": "text-muted-foreground")}>+ ₵{extra.price.toFixed(2)}</p>
                   </div>
                 ))}
               </div>
@@ -297,4 +354,12 @@ export default function ItemPage() {
       </div>
     </div>
   );
+}
+
+export default function ItemPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen food-pattern"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>}>
+            <ItemPageComponent />
+        </Suspense>
+    )
 }

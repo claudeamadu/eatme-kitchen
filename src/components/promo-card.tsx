@@ -6,15 +6,17 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import type { promo } from '@/lib/types';
 
-export function PromoCard({ title, description, buttonText, imageUrl, imageHint, imagePosition, href }: promo) {
+export function PromoCard({ id, title, description, buttonText, imageUrl, imageHint, imagePosition, href }: promo) {
   
+  const promoHref = `${href}?promo=${id}`;
+
   return (
     <Card className="shadow-lg rounded-2xl overflow-hidden">
       <CardContent className={cn("p-6 flex items-center justify-between gap-4", imagePosition === 'left' ? 'flex-row-reverse' : '')}>
         <div className="flex-1">
           <h3 className="text-xl font-headline font-bold text-foreground">{title}</h3>
           <p className="text-muted-foreground mt-1 mb-4">{description}</p>
-          <Link href={href}>
+          <Link href={promoHref}>
             <Button className="bg-red-600 hover:bg-red-700 text-white rounded-full px-6">{buttonText}</Button>
           </Link>
         </div>

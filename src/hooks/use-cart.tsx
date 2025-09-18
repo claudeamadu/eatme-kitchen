@@ -79,14 +79,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const addToCart = (itemToAdd: Omit<cart_item, 'quantity'> & { quantity?: number }) => {
     const quantityToAdd = itemToAdd.quantity || 1;
+    // Make ID unique based on price to handle promo items separately
+    const uniqueId = `${itemToAdd.id}-${itemToAdd.price}`;
+
     setItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item.id === itemToAdd.id);
+      const existingItem = prevItems.find((item) => item.id === uniqueId);
       if (existingItem) {
         return prevItems.map((item) =>
-          item.id === itemToAdd.id ? { ...item, quantity: item.quantity + quantityToAdd } : item
+          item.id === uniqueId ? { ...item, quantity: item.quantity + quantityToAdd } : item
         );
       }
-      return [...prevItems, { ...itemToAdd, quantity: quantityToAdd }];
+      return [...prevItems, { ...itemToAdd, id: uniqueId, quantity: quantityToAdd }];
     });
     toast({
       title: "Added to Cart",
