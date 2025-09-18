@@ -109,7 +109,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     }
     
     if (user) {
-        if (pathname.startsWith('/login') || pathname.startsWith('/signup')) {
+        if (pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/onboarding')) {
             router.replace('/');
             return <AppLayout><div /></AppLayout>;
         }
@@ -118,7 +118,11 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     
     if (!user) {
         if (!hasCompletedOnboarding) {
-            return <OnboardingPage />;
+            if (pathname === '/onboarding') {
+                return <OnboardingPage />;
+            }
+            router.replace('/onboarding');
+            return <SplashScreen/>
         }
         if (!pathname.startsWith('/login') && !pathname.startsWith('/signup') && !pathname.startsWith('/onboarding')) {
              router.replace('/login');

@@ -103,12 +103,12 @@ export default function OrderDetailPage() {
     fetchOrder();
   }, [id]);
   
-  const handleRatingChange = (itemId: string, rating: number) => {
-    setRatings(prev => ({ ...prev, [itemId]: { ...prev[itemId], rating } }));
+  const handleRatingChange = (foodId: string, rating: number) => {
+    setRatings(prev => ({ ...prev, [foodId]: { ...prev[foodId], rating } }));
   };
 
-  const handleReviewTextChange = (itemId: string, text: string) => {
-    setRatings(prev => ({ ...prev, [itemId]: { ...prev[itemId], text } }));
+  const handleReviewTextChange = (foodId: string, text: string) => {
+    setRatings(prev => ({ ...prev, [foodId]: { ...prev[foodId], text } }));
   };
 
   const submitRatings = async () => {
@@ -120,8 +120,13 @@ export default function OrderDetailPage() {
     
     const ratedItems = Object.entries(ratings).filter(([, value]) => value.rating > 0);
 
+    if (ratedItems.length === 0) {
+        toast({ variant: 'destructive', title: 'No ratings provided', description: 'Please rate at least one item before submitting.' });
+        setIsSubmitting(false);
+        return;
+    }
+
     try {
-        // Create review documents
         for (const [foodId, reviewData] of ratedItems) {
             await addDoc(collection(db, 'reviews'), {
                 uid: user.uid,
@@ -135,23 +140,20 @@ export default function OrderDetailPage() {
             });
         }
         
-        // Update loyalty points in a transaction
-        if (ratedItems.length > 0) {
-            const loyaltyRef = doc(db, 'users', user.uid, 'loyalty', 'data');
-            await runTransaction(db, async (transaction) => {
-                const pointsPerReview = 5;
-                const totalPoints = ratedItems.length * pointsPerReview;
-                transaction.set(loyaltyRef, { 
-                    points: increment(totalPoints),
-                    reviews: increment(ratedItems.length)
-                }, { merge: true });
-             });
-        }
+        const loyaltyRef = doc(db, 'users', user.uid, 'loyalty', 'data');
+        await runTransaction(db, async (transaction) => {
+            const pointsPerReview = 5;
+            const totalPoints = ratedItems.length * pointsPerReview;
+            transaction.set(loyaltyRef, { 
+                points: increment(totalPoints),
+                reviews: increment(ratedItems.length)
+            }, { merge: true });
+            });
         
         setIsRatingSheetOpen(false);
         toast({
             title: "Ratings Submitted",
-            description: `Thank you for your feedback! You've earned ${ratedItems.length * 5} points.`,
+            description: `Thank you for your feedback! You've earned ${ratedItems.length * 5} loyalty points.`,
         });
 
     } catch(err) {
@@ -249,9 +251,11 @@ export default function OrderDetailPage() {
              <Button size="lg" className="w-full rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14">
                 Order Again!
             </Button>
-            <Button size="lg" variant="outline" className="w-full rounded-full bg-card/80 backdrop-blur-sm text-lg h-14 mt-3" onClick={() => setIsRatingSheetOpen(true)}>
-                Rate Dishes
-            </Button>
+            {order.status === 'Completed' && 
+                <Button size="lg" variant="outline" className="w-full rounded-full bg-card/80 backdrop-blur-sm text-lg h-14 mt-3" onClick={() => setIsRatingSheetOpen(true)}>
+                    Rate Dishes
+                </Button>
+            }
         </div>
       </div>
 
@@ -259,7 +263,7 @@ export default function OrderDetailPage() {
         <SheetContent side="bottom" className="rounded-t-2xl p-6">
           <SheetHeader className="text-center mb-4">
             <SheetTitle className="text-xl font-bold font-headline">Rate Your Dishes</SheetTitle>
-            <SheetDescription>Let us know how you enjoyed your meal!</SheetDescription>
+            <SheetDescription>Let us know how you enjoyed your meal! You get 5 loyalty points for each review.</SheetDescription>
           </SheetHeader>
           <div className="space-y-6 max-h-[60vh] overflow-y-auto px-1">
              {order.items.map(item => {

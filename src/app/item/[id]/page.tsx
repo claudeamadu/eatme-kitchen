@@ -32,12 +32,16 @@ export default function ItemPage() {
   const isCustomizable = !!(item?.sizes?.length || item?.extras?.length);
 
   useEffect(() => {
-    if (!id || typeof id !== 'string') return;
+    if (!id || typeof id !== 'string') {
+        setIsLoading(false);
+        notFound();
+        return;
+    };
 
     const fetchItem = async () => {
       setIsLoading(true);
       try {
-        const docRef = doc(db, "foodItems", id);
+        const docRef = doc(db, "foodItems", id as string);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists() && !docSnap.data().isDeleted) {
@@ -47,11 +51,11 @@ export default function ItemPage() {
             setSelectedSize(fetchedItem.sizes[0].name);
           }
         } else {
-          notFound();
+          setItem(null);
         }
       } catch (error) {
         console.error("Error fetching food item:", error);
-        notFound();
+        setItem(null);
       } finally {
         setIsLoading(false);
       }
@@ -102,6 +106,7 @@ export default function ItemPage() {
   };
 
   const calculateTotal = () => {
+    if (!item) return 0;
     if (!isCustomizable) {
         return item.price * quantity;
     }
@@ -252,7 +257,7 @@ export default function ItemPage() {
                             <div className="flex-1">
                                 <div className="flex justify-between items-center">
                                     <h4 className="font-bold">{review.userDisplayName}</h4>
-                                    <span className="text-xs text-muted-foreground">{formatDistanceToNow(review.createdAt.toDate(), { addSuffix: true })}</span>
+                                    <span className="text-xs text-muted-foreground">{review.createdAt ? formatDistanceToNow(review.createdAt.toDate(), { addSuffix: true }) : ''}</span>
                                 </div>
                                 <div className="flex items-center gap-1 mt-1">
                                     {[...Array(5)].map((_, i) => (

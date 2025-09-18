@@ -7,7 +7,7 @@ export interface food_size {
 }
 
 export interface food_extra {
-  name: string;
+  name:string;
   price: number;
   image: string; // Changed from optional to required
   hint?: string;
@@ -111,6 +111,7 @@ export interface user {
   email: string;
   phone?: string;
   dob?: string;
+  photoURL?: string;
 }
 
 export type reservation_status = 'Pending' | 'Confirmed' | 'Cancelled';
@@ -135,6 +136,7 @@ export interface review {
     id: string;
     uid: string;
     foodId: string;
+    orderId: string;
     rating: number;
     text: string;
     createdAt: Timestamp;
