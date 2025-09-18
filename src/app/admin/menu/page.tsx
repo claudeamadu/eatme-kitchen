@@ -63,7 +63,7 @@ export default function AdminMenuPage() {
     }, []);
 
     const handleOpenFoodItemDialog = (item: food_item | null = null) => {
-        setCurrentFoodItem(item || { title: '', description: '', price: 0, cuisine: '', imageUrl: 'https://picsum.photos/seed/1/600/400', imageHint: '', dietary: [], isDeleted: false, sizes: [], extras: [] });
+        setCurrentFoodItem(item || { title: '', description: '', price: 0, cuisine: '', imageUrl: 'https://placehold.co/100x100', imageHint: '', dietary: [], isDeleted: false, sizes: [], extras: [] });
         setFoodItemFiles({ extraImages: [] });
         setIsFoodItemDialogOpen(true);
     };

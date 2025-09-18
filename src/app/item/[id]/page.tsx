@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { notFound, useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,10 @@ import { ChevronLeft, Clock, Minus, Plus, Star, Loader2, Heart } from 'lucide-re
 import { cn } from '@/lib/utils';
 import { useCart } from '@/hooks/use-cart';
 import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import type { food_item } from '@/lib/types';
-
+import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import type { food_item, review } from '@/lib/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function ItemPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function ItemPage() {
   const { id } = params;
   const { addToCart } = useCart();
   const [item, setItem] = useState<food_item | null>(null);
+  const [reviews, setReviews] = useState<review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -56,7 +58,28 @@ export default function ItemPage() {
     };
     
     fetchItem();
+
+    const reviewsQuery = query(collection(db, 'reviews'), where('foodId', '==', id));
+    const unsubscribeReviews = onSnapshot(reviewsQuery, (snapshot) => {
+        const fetchedReviews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as review));
+        setReviews(fetchedReviews);
+    });
+    
+    return () => unsubscribeReviews();
+
   }, [id]);
+
+  const { averageRating, totalReviews } = useMemo(() => {
+    if (reviews.length === 0) {
+      return { averageRating: 0, totalReviews: 0 };
+    }
+    const totalRating = reviews.reduce((acc, r) => acc + r.rating, 0);
+    return {
+      averageRating: totalRating / reviews.length,
+      totalReviews: reviews.length,
+    };
+  }, [reviews]);
+
 
   if (isLoading) {
      return (
@@ -119,6 +142,11 @@ export default function ItemPage() {
         });
     }
   }
+  
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'A';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  }
 
   return (
     <div className="relative min-h-screen food-pattern">
@@ -150,8 +178,8 @@ export default function ItemPage() {
           <div className="flex items-center gap-4 text-muted-foreground my-3">
             <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                <span className="font-bold text-foreground">4.5</span>
-                <span className="text-sm">(30 reviews)</span>
+                <span className="font-bold text-foreground">{averageRating.toFixed(1)}</span>
+                <span className="text-sm">({totalReviews} reviews)</span>
             </div>
             <div className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
@@ -186,7 +214,7 @@ export default function ItemPage() {
           )}
 
           {item.extras && item.extras.length > 0 && (
-            <section>
+            <section className="mb-6">
               <h2 className="text-xl font-bold font-headline mb-3">Extras</h2>
               <div className="grid grid-cols-3 gap-3">
                 {item.extras.map(extra => (
@@ -210,6 +238,36 @@ export default function ItemPage() {
               </div>
             </section>
           )}
+
+          <section>
+             <h2 className="text-xl font-bold font-headline mb-4">Reviews ({totalReviews})</h2>
+             <div className="space-y-6">
+                {reviews.length > 0 ? (
+                    reviews.map(review => (
+                        <div key={review.id} className="flex gap-4">
+                            <Avatar>
+                                <AvatarImage src={review.userPhotoURL} />
+                                <AvatarFallback>{getInitials(review.userDisplayName)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                                <div className="flex justify-between items-center">
+                                    <h4 className="font-bold">{review.userDisplayName}</h4>
+                                    <span className="text-xs text-muted-foreground">{formatDistanceToNow(review.createdAt.toDate(), { addSuffix: true })}</span>
+                                </div>
+                                <div className="flex items-center gap-1 mt-1">
+                                    {[...Array(5)].map((_, i) => (
+                                        <Star key={i} className={cn("w-4 h-4", i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300')} />
+                                    ))}
+                                </div>
+                                <p className="text-muted-foreground mt-2">{review.text}</p>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <p className="text-muted-foreground text-center py-4">No reviews yet. Be the first to review!</p>
+                )}
+             </div>
+          </section>
         </div>
       </div>
 
@@ -235,5 +293,3 @@ export default function ItemPage() {
     </div>
   );
 }
-
-    

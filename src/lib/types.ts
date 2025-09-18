@@ -130,3 +130,14 @@ export interface reservation {
     status: reservation_status;
     createdAt: Timestamp;
 }
+
+export interface review {
+    id: string;
+    uid: string;
+    foodId: string;
+    rating: number;
+    text: string;
+    createdAt: Timestamp;
+    userDisplayName: string;
+    userPhotoURL?: string;
+}

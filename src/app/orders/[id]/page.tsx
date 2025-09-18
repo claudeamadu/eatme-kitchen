@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc, runTransaction, increment } from 'firebase/firestore';
+import { doc, getDoc, runTransaction, increment, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { order, cart_item } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { useOnboarding } from '@/hooks/use-onboarding';
+import { Textarea } from '@/components/ui/textarea';
 
 const statusColors: { [key: string]: string } = {
   Ongoing: 'text-orange-500 bg-orange-100',
@@ -47,6 +48,10 @@ const StarRating = ({ rating, setRating }: { rating: number, setRating: (rating:
     );
 };
 
+interface RatingState {
+    rating: number;
+    text: string;
+}
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -59,7 +64,7 @@ export default function OrderDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRatingSheetOpen, setIsRatingSheetOpen] = useState(false);
-  const [ratings, setRatings] = useState<Record<string, number>>({});
+  const [ratings, setRatings] = useState<Record<string, RatingState>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -77,9 +82,11 @@ export default function OrderDetailPage() {
         if (docSnap.exists()) {
           const orderData = { id: docSnap.id, ...docSnap.data() } as order;
           setOrder(orderData);
-          const initialRatings: Record<string, number> = {};
+          const initialRatings: Record<string, RatingState> = {};
           orderData.items.forEach(item => {
-            initialRatings[item.id] = 0;
+            // The item.id from cart can contain size/extras, so we use the base food id from the original item.id
+            const foodId = item.id.split('-')[0];
+            initialRatings[foodId] = { rating: 0, text: '' };
           });
           setRatings(initialRatings);
         } else {
@@ -97,26 +104,46 @@ export default function OrderDetailPage() {
   }, [id]);
   
   const handleRatingChange = (itemId: string, rating: number) => {
-    setRatings(prev => ({ ...prev, [itemId]: rating }));
+    setRatings(prev => ({ ...prev, [itemId]: { ...prev[itemId], rating } }));
+  };
+
+  const handleReviewTextChange = (itemId: string, text: string) => {
+    setRatings(prev => ({ ...prev, [itemId]: { ...prev[itemId], text } }));
   };
 
   const submitRatings = async () => {
-    if (!user) {
+    if (!user || !order) {
         toast({ variant: 'destructive', title: 'Not authenticated' });
         return;
     }
     setIsSubmitting(true);
-    try {
-        const loyaltyRef = doc(db, 'users', user.uid, 'loyalty', 'data');
-        const ratedItemsCount = Object.values(ratings).filter(r => r > 0).length;
+    
+    const ratedItems = Object.entries(ratings).filter(([, value]) => value.rating > 0);
 
-        if (ratedItemsCount > 0) {
-             await runTransaction(db, async (transaction) => {
+    try {
+        // Create review documents
+        for (const [foodId, reviewData] of ratedItems) {
+            await addDoc(collection(db, 'reviews'), {
+                uid: user.uid,
+                foodId: foodId,
+                orderId: order.id,
+                rating: reviewData.rating,
+                text: reviewData.text,
+                createdAt: serverTimestamp(),
+                userDisplayName: user.displayName || 'Anonymous',
+                userPhotoURL: user.photoURL || '',
+            });
+        }
+        
+        // Update loyalty points in a transaction
+        if (ratedItems.length > 0) {
+            const loyaltyRef = doc(db, 'users', user.uid, 'loyalty', 'data');
+            await runTransaction(db, async (transaction) => {
                 const pointsPerReview = 5;
-                const totalPoints = ratedItemsCount * pointsPerReview;
+                const totalPoints = ratedItems.length * pointsPerReview;
                 transaction.set(loyaltyRef, { 
                     points: increment(totalPoints),
-                    reviews: increment(ratedItemsCount)
+                    reviews: increment(ratedItems.length)
                 }, { merge: true });
              });
         }
@@ -124,8 +151,9 @@ export default function OrderDetailPage() {
         setIsRatingSheetOpen(false);
         toast({
             title: "Ratings Submitted",
-            description: `Thank you for your feedback! You've earned ${ratedItemsCount * 5} points.`,
+            description: `Thank you for your feedback! You've earned ${ratedItems.length * 5} points.`,
         });
+
     } catch(err) {
         console.error("Failed to submit ratings", err);
         toast({ variant: 'destructive', title: 'Submission Failed', description: 'Could not submit your ratings.' });
@@ -234,22 +262,32 @@ export default function OrderDetailPage() {
             <SheetDescription>Let us know how you enjoyed your meal!</SheetDescription>
           </SheetHeader>
           <div className="space-y-6 max-h-[60vh] overflow-y-auto px-1">
-             {order.items.map(item => (
-                <div key={item.id} className="flex items-center gap-4">
-                     <Image
-                        src={item.imageUrl}
-                        alt={item.name}
-                        width={64}
-                        height={64}
-                        className="rounded-lg object-cover w-16 h-16"
-                        data-ai-hint={item.imageHint || 'food item'}
-                     />
-                     <div className="flex-grow">
-                        <p className="font-bold">{item.name}</p>
-                        <StarRating rating={ratings[item.id] || 0} setRating={(rating) => handleRatingChange(item.id, rating)} />
-                     </div>
-                </div>
-             ))}
+             {order.items.map(item => {
+                const foodId = item.id.split('-')[0];
+                return (
+                    <div key={item.id} className="flex flex-col gap-3 p-4 border rounded-lg">
+                        <div className="flex items-center gap-4">
+                             <Image
+                                src={item.imageUrl}
+                                alt={item.name}
+                                width={64}
+                                height={64}
+                                className="rounded-lg object-cover w-16 h-16"
+                                data-ai-hint={item.imageHint || 'food item'}
+                             />
+                             <div className="flex-grow">
+                                <p className="font-bold">{item.name}</p>
+                                <StarRating rating={ratings[foodId]?.rating || 0} setRating={(rating) => handleRatingChange(foodId, rating)} />
+                             </div>
+                        </div>
+                        <Textarea 
+                            placeholder="Share your thoughts..."
+                            value={ratings[foodId]?.text || ''}
+                            onChange={(e) => handleReviewTextChange(foodId, e.target.value)}
+                        />
+                    </div>
+                )
+             })}
           </div>
           <SheetFooter className="mt-6">
             <Button size="lg" className="w-full rounded-full bg-red-600 hover:bg-red-700 text-white" onClick={submitRatings} disabled={isSubmitting}>
