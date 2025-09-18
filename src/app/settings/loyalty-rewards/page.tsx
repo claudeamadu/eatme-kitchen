@@ -106,21 +106,22 @@ export default function LoyaltyRewardsPage() {
       </header>
 
       <main className="container mx-auto px-4">
-        <Card className="shadow-xl rounded-2xl mb-8">
+        <Card className="shadow-xl rounded-2xl mb-4">
           <CardContent className="p-5">
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-muted-foreground">Points</p>
                 <p className="text-4xl font-bold text-destructive">{loyaltyData?.points || 0} <span className="text-2xl">pts</span></p>
-                <p className="text-sm font-semibold text-muted-foreground">Worth ₵{((loyaltyData?.points || 0) * 0.5).toFixed(2)}</p>
+                <p className="text-sm font-semibold text-muted-foreground">5% off your next meal order</p>
                 <Button className="mt-3 rounded-full bg-red-600 hover:bg-red-700 text-white px-8" onClick={handleRedeem}>Redeem</Button>
               </div>
               <Image src="/assets/rewards/9cc08b0ff7a667d769d134a037bbc641.png" alt="Gift box" width={120} height={90} data-ai-hint="gift box" className="w-32 h-auto" />
             </div>
           </CardContent>
         </Card>
-
+        
         <p className="text-center text-muted-foreground mb-6">Earn more points and enjoy exclusive benefits</p>
+
 
         <div className="grid grid-cols-2 gap-4">
           {rewards.map((reward) => {
@@ -132,16 +133,16 @@ export default function LoyaltyRewardsPage() {
                 const firstBites = loyaltyData?.orderedFoodIds?.length || 0;
                 return (
                     <Card key={reward.id} className="shadow-lg rounded-2xl">
-                    <CardContent className="p-4 text-center">
-                        <Image src={reward.image} alt={reward.title} width={100} height={75} data-ai-hint={reward.imageHint} className="mx-auto mb-3 h-20 object-contain" />
-                        <h3 className="font-bold font-headline">{reward.title}</h3>
-                        <p className="text-xs text-muted-foreground mt-1 mb-3 h-8">{reward.description}</p>
+                    <CardContent className="p-4 text-center flex flex-col justify-between h-full">
+                        <div>
+                            <Image src={reward.image} alt={reward.title} width={100} height={75} data-ai-hint={reward.imageHint} className="mx-auto mb-3 h-20 object-contain" />
+                            <h3 className="font-bold font-headline">{reward.title}</h3>
+                            <p className="text-xs text-muted-foreground mt-1 mb-3 h-8">{reward.description}</p>
+                        </div>
                         <div className="flex flex-col items-center">
-                           <p className="text-2xl font-bold">{firstBites}</p>
-                           <p className="text-xs text-muted-foreground">New Dishes Tried</p>
-                           {reward.tag && (
-                                <Badge variant="secondary" className="mt-2 bg-red-100 text-red-700 border-none font-semibold">{reward.tag}</Badge>
-                           )}
+                           <Badge variant="secondary" className="mt-2 bg-red-100 text-red-700 border-none font-semibold">
+                                {firstBites} New trys
+                           </Badge>
                         </div>
                     </CardContent>
                     </Card>
@@ -150,18 +151,19 @@ export default function LoyaltyRewardsPage() {
 
             return (
                 <Card key={reward.id} className="shadow-lg rounded-2xl">
-                <CardContent className="p-4 text-center">
-                    <Image src={reward.image} alt={reward.title} width={100} height={75} data-ai-hint={reward.imageHint} className="mx-auto mb-3 h-20 object-contain" />
-                    <h3 className="font-bold font-headline">{reward.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1 mb-3 h-8">{reward.description}</p>
-                    {progressValue !== undefined && (
+                <CardContent className="p-4 text-center flex flex-col justify-between h-full">
+                    <div>
+                        <Image src={reward.image} alt={reward.title} width={100} height={75} data-ai-hint={reward.imageHint} className="mx-auto mb-3 h-20 object-contain" />
+                        <h3 className="font-bold font-headline">{reward.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-1 mb-3 h-8">{reward.description}</p>
+                    </div>
+                    {progressValue !== undefined && progressText !== undefined ? (
                     <div className="flex items-center gap-2">
-                        <Progress value={progressValue} className="h-2" />
+                        <Progress value={progressValue} className="h-2 flex-1" />
                         <span className="text-xs font-semibold text-muted-foreground">{progressText}</span>
                     </div>
-                    )}
-                    {reward.tag && !progressValue && (
-                        <Badge variant="secondary" className="bg-red-100 text-red-700 border-none font-semibold">{reward.tag}</Badge>
+                    ) : (
+                        reward.tag && <Badge variant="secondary" className="bg-red-100 text-red-700 border-none font-semibold mx-auto">{reward.tag}</Badge>
                     )}
                 </CardContent>
                 </Card>
@@ -172,3 +174,5 @@ export default function LoyaltyRewardsPage() {
     </div>
   );
 }
+
+    
