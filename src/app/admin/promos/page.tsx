@@ -150,9 +150,9 @@ export default function AdminPromosPage() {
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-lg">
+                <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
                     <DialogHeader><DialogTitle>{currentPromo?.id ? 'Edit' : 'Add'} Promo</DialogTitle></DialogHeader>
-                    <div className="grid gap-4 py-4">
+                    <div className="grid gap-4 py-4 overflow-y-auto px-1">
                         <div className="space-y-2"><Label>Title</Label><Input value={currentPromo?.title} onChange={(e) => handlePromoChange('title', e.target.value)} /></div>
                         <div className="space-y-2"><Label>Description</Label><Input value={currentPromo?.description} onChange={(e) => handlePromoChange('description', e.target.value)} /></div>
                         <div className="space-y-2"><Label>Button Text</Label><Input value={currentPromo?.buttonText} onChange={(e) => handlePromoChange('buttonText', e.target.value)} /></div>
