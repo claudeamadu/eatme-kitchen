@@ -19,6 +19,9 @@ import { useOnboarding } from '@/hooks/use-onboarding';
 import { Textarea } from '@/components/ui/textarea';
 
 const statusColors: { [key: string]: string } = {
+  Pending: 'text-yellow-600 bg-yellow-100',
+  Confirmed: 'text-blue-600 bg-blue-100',
+  Ready: 'text-purple-600 bg-purple-100',
   Ongoing: 'text-orange-500 bg-orange-100',
   Completed: 'text-green-600 bg-green-100',
   Cancelled: 'text-red-600 bg-red-100',

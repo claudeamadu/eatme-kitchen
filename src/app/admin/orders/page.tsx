@@ -12,6 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format } from 'date-fns';
 import { Loader2, View } from 'lucide-react';
 import { OrderDetailModal } from '@/components/admin/order-detail-modal';
+import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
+
+const orderStatuses: order_status[] = ['Pending', 'Confirmed', 'Ready', 'Completed', 'Cancelled'];
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<order[]>([]);
@@ -19,6 +24,11 @@ export default function AdminOrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<order | null>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
+
+  const { toast } = useToast();
 
   useEffect(() => {
     const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
@@ -41,14 +51,57 @@ export default function AdminOrdersPage() {
 
   const handleStatusChange = async (orderId: string, newStatus: order_status) => {
     const orderRef = doc(db, 'orders', orderId);
-    const timelineRef = collection(orderRef, 'timelines');
-
     await updateDoc(orderRef, { status: newStatus });
+    
+    const timelineRef = collection(orderRef, 'timelines');
     await addDoc(timelineRef, {
         status: newStatus,
         timestamp: serverTimestamp()
     });
   };
+
+  const handleSelectStatusChange = (order: order, newStatus: order_status) => {
+      if (newStatus === 'Cancelled') {
+          setOrderToCancel(order);
+          setCancellationReason('');
+          setIsCancelDialogOpen(true);
+      } else {
+          handleStatusChange(order.id, newStatus);
+      }
+  };
+
+  const handleConfirmCancellation = async () => {
+    if (!orderToCancel || !cancellationReason) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Cancellation reason is required.' });
+        return;
+    }
+
+    try {
+        // 1. Update order status and timeline
+        await handleStatusChange(orderToCancel.id, 'Cancelled');
+        
+        // 2. Create notification for the user
+        const notificationRef = collection(db, 'users', orderToCancel.uid, 'notifications');
+        await addDoc(notificationRef, {
+            type: 'error',
+            title: `Order #${orderToCancel.id.slice(0, 6)} Cancelled`,
+            description: `Reason: ${cancellationReason}`,
+            createdAt: serverTimestamp(),
+            isRead: false,
+            link: { href: `/orders/${orderToCancel.id}`, text: 'View Order' }
+        });
+        
+        toast({ title: 'Order Cancelled', description: 'The user has been notified.' });
+
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: `Failed to cancel order: ${error.message}` });
+    } finally {
+        setIsCancelDialogOpen(false);
+        setOrderToCancel(null);
+        setCancellationReason('');
+    }
+  };
+
   
   const handleViewOrder = (order: order) => {
     setSelectedOrder(order);
@@ -100,16 +153,16 @@ export default function AdminOrdersPage() {
                     <TableCell>
                         <Select 
                         value={order.status} 
-                        onValueChange={(value) => handleStatusChange(order.id, value as order_status)}
+                        onValueChange={(value) => handleSelectStatusChange(order, value as order_status)}
                         disabled={order.status === 'Completed' || order.status === 'Cancelled'}
                         >
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-36">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="Ongoing">Ongoing</SelectItem>
-                            <SelectItem value="Completed">Completed</SelectItem>
-                            <SelectItem value="Cancelled">Cancelled</SelectItem>
+                            {orderStatuses.map(status => (
+                                <SelectItem key={status} value={status}>{status}</SelectItem>
+                            ))}
                         </SelectContent>
                         </Select>
                     </TableCell>
@@ -126,6 +179,26 @@ export default function AdminOrdersPage() {
         </CardContent>
       </Card>
       <OrderDetailModal order={selectedOrder} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      
+      <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      Please provide a reason for cancelling this order. This will be sent to the customer.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <Textarea 
+                placeholder="e.g., Item out of stock, technical issue, etc."
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+              />
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Back</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleConfirmCancellation} disabled={!cancellationReason}>Confirm Cancellation</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

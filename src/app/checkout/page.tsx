@@ -78,6 +78,7 @@ function CheckoutComponent() {
                     return;
                 }
                 await runTransaction(db, async (transaction) => {
+                    const orderRef = doc(collection(db, 'orders'));
                     const loyaltyRef = doc(db, 'users', user.uid, 'loyalty', 'data');
                     const orderData = {
                         uid: user.uid,
@@ -85,9 +86,16 @@ function CheckoutComponent() {
                             id: item.id, name: item.name, quantity: item.quantity, price: item.price,
                             imageUrl: item.imageUrl, imageHint: item.imageHint, extras: item.extras,
                         })),
-                        total: finalTotal, status: 'Ongoing', createdAt: serverTimestamp(),
+                        total: finalTotal, status: 'Pending', createdAt: serverTimestamp(),
                     };
-                    transaction.set(doc(collection(db, 'orders')), orderData);
+                    transaction.set(orderRef, orderData);
+
+                    const timelineRef = collection(orderRef, 'timelines');
+                    transaction.set(doc(timelineRef), {
+                        status: 'Pending',
+                        timestamp: serverTimestamp()
+                    });
+
                     const pointsEarned = Math.floor(finalTotal / 10);
                     transaction.set(loyaltyRef, { 
                         points: increment(pointsEarned - cart.appliedPoints),

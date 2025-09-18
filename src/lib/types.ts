@@ -44,7 +44,7 @@ export interface cart_item {
   extras?: string;
 }
 
-export type order_status = 'Ongoing' | 'Completed' | 'Cancelled';
+export type order_status = 'Pending' | 'Confirmed' | 'Ready' | 'Completed' | 'Cancelled';
 
 export interface order {
     id: string;
