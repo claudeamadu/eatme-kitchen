@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, updateDoc, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
-import type { order, user as UserType, order_status } from '@/lib/types';
+import { collection, onSnapshot, doc, updateDoc, query, orderBy, addDoc, serverTimestamp, runTransaction, increment, getDoc } from 'firebase/firestore';
+import type { order, user as UserType, order_status, LoyaltyData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -49,8 +49,8 @@ export default function AdminOrdersPage() {
     };
   }, []);
 
-  const handleStatusChange = async (orderId: string, newStatus: order_status) => {
-    const orderRef = doc(db, 'orders', orderId);
+  const handleStatusChange = async (order: order, newStatus: order_status) => {
+    const orderRef = doc(db, 'orders', order.id);
     await updateDoc(orderRef, { status: newStatus });
     
     const timelineRef = collection(orderRef, 'timelines');
@@ -58,7 +58,52 @@ export default function AdminOrdersPage() {
         status: newStatus,
         timestamp: serverTimestamp()
     });
+
+    if (newStatus === 'Completed') {
+        handleFirstBiteBonus(order);
+    }
   };
+
+  const handleFirstBiteBonus = async (order: order) => {
+    try {
+        const loyaltyRef = doc(db, 'users', order.uid, 'loyalty', 'data');
+        
+        await runTransaction(db, async (transaction) => {
+            const loyaltySnap = await transaction.get(loyaltyRef);
+            const loyaltyData = (loyaltySnap.data() || { points: 0, orderedFoodIds: [] }) as LoyaltyData;
+            
+            let newFoodCount = 0;
+            const foodIdsInOrder = order.items.map(item => item.id.split('-')[0]);
+            
+            foodIdsInOrder.forEach(foodId => {
+                if (!loyaltyData.orderedFoodIds?.includes(foodId)) {
+                    newFoodCount++;
+                    loyaltyData.orderedFoodIds = [...(loyaltyData.orderedFoodIds || []), foodId];
+                }
+            });
+
+            if (newFoodCount > 0) {
+                const bonusPoints = newFoodCount * 10; // 10 points per new item
+                transaction.set(loyaltyRef, {
+                    points: increment(bonusPoints),
+                    orderedFoodIds: loyaltyData.orderedFoodIds
+                }, { merge: true });
+
+                toast({
+                    title: 'First Bite Bonus!',
+                    description: `User ${order.uid.slice(0,6)} earned ${bonusPoints} points for trying ${newFoodCount} new item(s).`
+                });
+            }
+        });
+    } catch (error) {
+        console.error("Failed to apply first bite bonus:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Bonus Failed',
+            description: 'Could not apply the First Bite Bonus.'
+        });
+    }
+};
 
   const handleSelectStatusChange = (order: order, newStatus: order_status) => {
       if (newStatus === 'Cancelled') {
@@ -66,7 +111,7 @@ export default function AdminOrdersPage() {
           setCancellationReason('');
           setIsCancelDialogOpen(true);
       } else {
-          handleStatusChange(order.id, newStatus);
+          handleStatusChange(order, newStatus);
       }
   };
 
@@ -78,7 +123,7 @@ export default function AdminOrdersPage() {
 
     try {
         // 1. Update order status and timeline
-        await handleStatusChange(orderToCancel.id, 'Cancelled');
+        await handleStatusChange(orderToCancel, 'Cancelled');
         
         // 2. Create notification for the user
         const notificationRef = collection(db, 'users', orderToCancel.uid, 'notifications');

@@ -3,8 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, updateDoc, query, orderBy } from 'firebase/firestore';
-import type { reservation } from '@/lib/types';
+import { collection, onSnapshot, doc, updateDoc, query, orderBy, runTransaction, increment } from 'firebase/firestore';
+import type { reservation, reservation_status } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, Settings } from 'lucide-react';
@@ -12,10 +12,12 @@ import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminReservationsPage() {
   const [reservations, setReservations] = useState<reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const q = query(collection(db, "reservations"), orderBy("createdAt", "desc"));
@@ -28,9 +30,29 @@ export default function AdminReservationsPage() {
     return () => unsubscribe();
   }, []);
   
-  const handleStatusChange = async (reservationId: string, newStatus: string) => {
-    const reservationRef = doc(db, 'reservations', reservationId);
+  const handleStatusChange = async (reservation: reservation, newStatus: reservation_status) => {
+    const reservationRef = doc(db, 'reservations', reservation.id);
     await updateDoc(reservationRef, { status: newStatus });
+
+    if (newStatus === 'Confirmed' && reservation.occasion === 'Birthday') {
+        const loyaltyRef = doc(db, 'users', reservation.uid, 'loyalty', 'data');
+        try {
+            await runTransaction(db, async (transaction) => {
+                transaction.set(loyaltyRef, { points: increment(50) }, { merge: true });
+            });
+            toast({
+                title: 'Birthday Bash Bonus!',
+                description: `User ${reservation.uid.slice(0,6)} earned 50 points for a birthday reservation.`
+            });
+        } catch (error) {
+            console.error("Failed to apply birthday bonus:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Bonus Failed',
+                description: 'Could not apply Birthday Bash bonus.'
+            });
+        }
+    }
   };
 
   if (isLoading) {
@@ -82,7 +104,7 @@ export default function AdminReservationsPage() {
                   <TableCell>{r.occasion}</TableCell>
                   <TableCell>₵{r.total.toFixed(2)}</TableCell>
                   <TableCell>
-                    <Select value={r.status} onValueChange={(value) => handleStatusChange(r.id, value)}>
+                    <Select value={r.status} onValueChange={(value) => handleStatusChange(r, value as reservation_status)}>
                       <SelectTrigger className="w-32">
                         <SelectValue />
                       </SelectTrigger>

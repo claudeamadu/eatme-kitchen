@@ -104,7 +104,8 @@ export interface LoyaltyData {
   referrals: number;
   reviews: number;
   orders: number;
-  [key: string]: number; // To allow indexing with string.
+  orderedFoodIds?: string[];
+  [key: string]: number | string[] | undefined;
 }
 
 export interface user {

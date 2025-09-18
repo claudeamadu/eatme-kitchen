@@ -13,6 +13,7 @@ import { useOnboarding } from '@/hooks/use-onboarding';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { LoyaltyData } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 
 const rewards = [
@@ -25,12 +26,12 @@ const rewards = [
         target: 10,
     },
     {
-        id: 'first-bite',
+        id: 'orderedFoodIds',
         title: 'First Bite Bonus',
         description: 'Enjoy extra points when you try a new menu item.',
         image: '/assets/rewards/7e0d309cc3a115c115f99deae34c3fee.png',
         imageHint: 'delicious meal',
-        tag: '6 New trys',
+        tag: '10 pts per try',
     },
     {
         id: 'loyalty-lunch',
@@ -61,6 +62,7 @@ export default function LoyaltyRewardsPage() {
   const { user } = useOnboarding();
   const [loyaltyData, setLoyaltyData] = useState<LoyaltyData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
@@ -69,7 +71,7 @@ export default function LoyaltyRewardsPage() {
         if (docSnap.exists()) {
           setLoyaltyData(docSnap.data() as LoyaltyData);
         } else {
-          setLoyaltyData({ points: 0, referrals: 0, reviews: 0, orders: 0 });
+          setLoyaltyData({ points: 0, referrals: 0, reviews: 0, orders: 0, orderedFoodIds: [] });
         }
         setIsLoading(false);
       });
@@ -78,6 +80,13 @@ export default function LoyaltyRewardsPage() {
       setIsLoading(false);
     }
   }, [user]);
+
+  const handleRedeem = () => {
+    toast({
+        title: "How to use your points",
+        description: "You can apply your points for a discount directly at checkout!",
+    });
+  };
 
   if (isLoading) {
     return (
@@ -103,8 +112,8 @@ export default function LoyaltyRewardsPage() {
               <div>
                 <p className="text-muted-foreground">Points</p>
                 <p className="text-4xl font-bold text-destructive">{loyaltyData?.points || 0} <span className="text-2xl">pts</span></p>
-                <p className="text-sm font-semibold text-muted-foreground">{(loyaltyData?.points || 0) * 0.5}% off your next meal order</p>
-                <Button className="mt-3 rounded-full bg-red-600 hover:bg-red-700 text-white px-8">Redeem</Button>
+                <p className="text-sm font-semibold text-muted-foreground">Worth ₵{((loyaltyData?.points || 0) * 0.5).toFixed(2)}</p>
+                <Button className="mt-3 rounded-full bg-red-600 hover:bg-red-700 text-white px-8" onClick={handleRedeem}>Redeem</Button>
               </div>
               <Image src="/assets/rewards/9cc08b0ff7a667d769d134a037bbc641.png" alt="Gift box" width={120} height={90} data-ai-hint="gift box" className="w-32 h-auto" />
             </div>
@@ -115,9 +124,29 @@ export default function LoyaltyRewardsPage() {
 
         <div className="grid grid-cols-2 gap-4">
           {rewards.map((reward) => {
-            const currentProgress = loyaltyData ? loyaltyData[reward.id as keyof LoyaltyData] as number || 0 : 0;
+            const currentProgress = loyaltyData ? loyaltyData[reward.id] as number || 0 : 0;
             const progressValue = reward.target ? (currentProgress / reward.target) * 100 : undefined;
             const progressText = reward.target ? `${currentProgress}/${reward.target}` : undefined;
+
+            if (reward.id === 'orderedFoodIds') {
+                const firstBites = loyaltyData?.orderedFoodIds?.length || 0;
+                return (
+                    <Card key={reward.id} className="shadow-lg rounded-2xl">
+                    <CardContent className="p-4 text-center">
+                        <Image src={reward.image} alt={reward.title} width={100} height={75} data-ai-hint={reward.imageHint} className="mx-auto mb-3 h-20 object-contain" />
+                        <h3 className="font-bold font-headline">{reward.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-1 mb-3 h-8">{reward.description}</p>
+                        <div className="flex flex-col items-center">
+                           <p className="text-2xl font-bold">{firstBites}</p>
+                           <p className="text-xs text-muted-foreground">New Dishes Tried</p>
+                           {reward.tag && (
+                                <Badge variant="secondary" className="mt-2 bg-red-100 text-red-700 border-none font-semibold">{reward.tag}</Badge>
+                           )}
+                        </div>
+                    </CardContent>
+                    </Card>
+                )
+            }
 
             return (
                 <Card key={reward.id} className="shadow-lg rounded-2xl">
@@ -131,7 +160,7 @@ export default function LoyaltyRewardsPage() {
                         <span className="text-xs font-semibold text-muted-foreground">{progressText}</span>
                     </div>
                     )}
-                    {reward.tag && (
+                    {reward.tag && !progressValue && (
                         <Badge variant="secondary" className="bg-red-100 text-red-700 border-none font-semibold">{reward.tag}</Badge>
                     )}
                 </CardContent>
