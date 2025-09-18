@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import OnboardingPage from '@/app/onboarding/page';
 import BottomNav from '@/components/layout/bottom-nav';
@@ -20,6 +20,7 @@ interface OnboardingContextType {
   hasCompletedOnboarding: boolean;
   completeOnboarding: () => void;
   user: User | null | undefined;
+  refreshUser: () => Promise<void>;
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -70,6 +71,15 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+        await currentUser.reload();
+        // Create a new user object to trigger re-renders
+        setUser({...currentUser});
+    }
+  }, []);
+
   useEffect(() => {
     if (isLoaded && !splashShown) {
       const timer = setTimeout(() => {
@@ -93,7 +103,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const value = { hasCompletedOnboarding, completeOnboarding, user };
+  const value = { hasCompletedOnboarding, completeOnboarding, user, refreshUser };
   
   const renderContent = () => {
     if (!isLoaded || !authLoaded) {

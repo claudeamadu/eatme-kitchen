@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,20 +13,26 @@ import { updateProfile } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { uploadFile } from '@/lib/firebase-storage';
 
 export default function ProfilePage() {
     const router = useRouter();
-    const { user } = useOnboarding();
+    const { user, refreshUser } = useOnboarding();
     const { toast } = useToast();
     
     const [username, setUsername] = useState('');
     const [phone, setPhone] = useState('');
     const [dob, setDob] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    
+    const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (user) {
             setUsername(user.displayName || '');
+            setImagePreview(user.photoURL || null);
             const fetchUserData = async () => {
                 const userDocRef = doc(db, 'users', user.uid);
                 const userDocSnap = await getDoc(userDocRef);
@@ -40,6 +46,18 @@ export default function ProfilePage() {
         }
     }, [user]);
 
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setProfileImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!user) {
@@ -48,16 +66,31 @@ export default function ProfilePage() {
         }
         setIsLoading(true);
         try {
+            let photoURL = user.photoURL;
+
+            if (profileImageFile) {
+                const imagePath = `profile-pictures/${user.uid}`;
+                photoURL = await uploadFile(profileImageFile, imagePath);
+            }
+
             // Update auth profile
-            await updateProfile(user, { displayName: username });
+            await updateProfile(user, { 
+                displayName: username,
+                photoURL: photoURL,
+             });
 
             // Update firestore document
             const userDocRef = doc(db, "users", user.uid);
             await setDoc(userDocRef, {
+                uid: user.uid,
+                email: user.email,
                 displayName: username,
                 phone: phone,
                 dob: dob,
+                photoURL: photoURL,
             }, { merge: true });
+
+            await refreshUser();
 
             toast({ title: 'Profile Updated', description: 'Your profile has been saved successfully.' });
             router.back();
@@ -86,12 +119,13 @@ export default function ProfilePage() {
                 <div className="flex justify-center mb-6">
                     <div className="relative">
                         <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
-                            <AvatarImage src={user?.photoURL || `https://i.pravatar.cc/150?u=${user?.email}`} alt={user?.displayName || 'User'} />
+                            <AvatarImage src={imagePreview || `https://i.pravatar.cc/150?u=${user?.email}`} alt={user?.displayName || 'User'} />
                             <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
                         </Avatar>
-                        <Button size="icon" className="absolute bottom-0 right-0 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground h-10 w-10">
+                        <Button size="icon" className="absolute bottom-0 right-0 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground h-10 w-10" onClick={() => fileInputRef.current?.click()}>
                             <Edit2 className="h-5 w-5" />
                         </Button>
+                        <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
                     </div>
                 </div>
 

@@ -62,7 +62,6 @@ export interface notification {
   type: notification_type;
   title: string;
   description: string;
-  time: string; // This might be better as a timestamp
   isRead: boolean;
   createdAt: Timestamp;
   isGlobal?: boolean;

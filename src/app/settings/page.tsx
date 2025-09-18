@@ -35,7 +35,7 @@ export default function SettingsPage() {
                 title: 'Logged Out',
                 description: 'You have been successfully logged out.',
             });
-            // The auth listener in OnboardingProvider will handle the redirect.
+            router.push('/login');
         } catch (error) {
             console.error("Logout failed", error);
             toast({
