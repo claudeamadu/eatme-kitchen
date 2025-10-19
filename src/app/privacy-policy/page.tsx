@@ -55,8 +55,7 @@ export default function PrivacyPolicyPage() {
 
             <h2 className="text-lg font-bold">Contact Us</h2>
             <p>If you have questions or comments about this Privacy Policy, please contact us at: privacy@eatmekitchen.org</p>
-            
-            <p className="pt-4 text-xs text-muted-foreground"><strong>Disclaimer:</strong> This is a template privacy policy. You should consult with a legal professional to ensure this policy meets your specific needs and complies with all applicable laws and regulations.</p>
+          
           </CardContent>
         </Card>
       </main>

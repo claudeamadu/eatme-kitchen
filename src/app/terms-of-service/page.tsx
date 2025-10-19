@@ -48,8 +48,6 @@ export default function TermsOfServicePage() {
 
             <h2 className="text-lg font-bold">Changes to Terms</h2>
             <p>We reserve the right, at our sole discretion, to modify or replace these Terms at any time. We will provide at least 30 days' notice prior to any new terms taking effect.</p>
-
-            <p className="pt-4 text-xs text-muted-foreground"><strong>Disclaimer:</strong> This is a template terms of service agreement. You should consult with a legal professional to ensure this agreement is suitable for your business and complies with all applicable laws.</p>
           </CardContent>
         </Card>
       </main>
