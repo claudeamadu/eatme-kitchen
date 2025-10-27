@@ -14,12 +14,12 @@ import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, runTransaction, increment, onSnapshot, query } from 'firebase/firestore';
 import { useReservation } from '@/hooks/use-reservation';
-import { payWithPaystack } from '@/lib/paystack';
+import { chargeWithPaystack, verifyPaystackTransaction } from '@/lib/paystack';
 import type { wallet as WalletType } from '@/lib/types';
 import Link from 'next/link';
 
 const MopedIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
         <circle cx="6" cy="18" r="2" />
         <circle cx="18" cy="18" r="2" />
         <path d="M6 18h1" />
@@ -52,8 +52,9 @@ function CheckoutComponent() {
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [processingMessage, setProcessingMessage] = useState('Processing...');
     const [wallets, setWallets] = useState<WalletType[]>([]);
-    const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
+    const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
 
     const isFood = checkoutType === 'food';
     
@@ -74,19 +75,18 @@ function CheckoutComponent() {
               userWallets.push({ id: doc.id, ...doc.data() } as WalletType);
             });
             setWallets(userWallets);
-            if (userWallets.length > 0 && !selectedWallet) {
-                setSelectedWallet(userWallets[0].id);
+            if (userWallets.length > 0 && !selectedWalletId) {
+                setSelectedWalletId(userWallets[0].id);
             }
           });
     
           return () => unsubscribe();
         }
-      }, [user, selectedWallet]);
+      }, [user, selectedWalletId]);
 
     const handleSuccessfulPayment = async () => {
         if (!user) return;
         
-        setIsProcessing(true);
         try {
             if (isFood) {
                 if (items.length === 0) {
@@ -135,29 +135,85 @@ function CheckoutComponent() {
         } catch (error: any) {
             console.error("Error creating order/reservation:", error);
             toast({ variant: 'destructive', title: 'Action Failed', description: error.message });
-        } finally {
-            setIsProcessing(false);
         }
     }
 
+    const pollTransactionStatus = (reference: string, retries = 20) => {
+        const interval = setInterval(async () => {
+            if (retries <= 0) {
+                clearInterval(interval);
+                toast({ variant: 'destructive', title: 'Payment Timed Out', description: 'Please try again.' });
+                setIsProcessing(false);
+                return;
+            }
+
+            const result = await verifyPaystackTransaction(reference);
+
+            if (result.status === 'success') {
+                clearInterval(interval);
+                setProcessingMessage('Payment successful! Finishing up...');
+                await handleSuccessfulPayment();
+                setIsProcessing(false);
+            } else if (result.status === 'failed') {
+                clearInterval(interval);
+                toast({ variant: 'destructive', title: 'Payment Failed', description: 'Your payment could not be completed.' });
+                setIsProcessing(false);
+            }
+            // If pending, do nothing and let the polling continue.
+            retries--;
+
+        }, 5000); // Poll every 5 seconds
+    };
+
     const handlePay = async () => {
-         if (!user?.email) {
+        if (!user?.email) {
             toast({ variant: 'destructive', title: 'Error', description: 'User email not found.' });
+            return;
+        }
+        if (!selectedWalletId) {
+            toast({ variant: 'destructive', title: 'No Wallet Selected', description: 'Please select a payment method.' });
+            return;
+        }
+
+        const selectedWallet = wallets.find(w => w.id === selectedWalletId);
+        if (!selectedWallet) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Selected wallet not found.' });
             return;
         }
 
         setIsProcessing(true);
+        setProcessingMessage('Initiating payment...');
+
         try {
-            const { authorization_url } = await payWithPaystack({
+            const networkMap = {
+                'mtn': 'mtn',
+                'vodafone': 'vod',
+                'airteltigo': 'tgo'
+            } as const;
+
+            const provider = networkMap[selectedWallet.network as keyof typeof networkMap];
+            
+            if (!provider) {
+                toast({ variant: 'destructive', title: 'Unsupported Network', description: 'This mobile money provider is not supported.' });
+                setIsProcessing(false);
+                return;
+            }
+            
+            const chargeResponse = await chargeWithPaystack({
                 email: user.email,
-                amount: finalTotal, // Paystack amount is in GHC
+                amount: finalTotal,
+                mobile_money: {
+                    phone: selectedWallet.number,
+                    provider: provider
+                }
             });
 
-            if (authorization_url) {
-                // Redirect to Paystack's payment page
-                router.push(authorization_url);
+            if (chargeResponse.status && chargeResponse.reference) {
+                setProcessingMessage(chargeResponse.message || 'Awaiting confirmation on your phone...');
+                // Start polling for verification
+                pollTransactionStatus(chargeResponse.reference);
             } else {
-                 toast({ variant: 'destructive', title: 'Payment Error', description: 'Could not initialize payment.' });
+                 toast({ variant: 'destructive', title: 'Payment Error', description: chargeResponse.message });
                  setIsProcessing(false);
             }
 
@@ -228,8 +284,8 @@ function CheckoutComponent() {
                         <h3 className="font-bold mb-4 flex items-center gap-2"><Wallet className="w-5 h-5 text-muted-foreground" /> Mobile Money</h3>
                         <div className="space-y-3">
                            {wallets.map(wallet => (
-                                <div key={wallet.id} className="flex items-center gap-4 p-3 rounded-lg border bg-background" onClick={() => setSelectedWallet(wallet.id)}>
-                                    <input type="radio" name="wallet" value={wallet.id} checked={selectedWallet === wallet.id} readOnly className="h-5 w-5 text-destructive border-muted-foreground focus:ring-destructive" />
+                                <div key={wallet.id} className="flex items-center gap-4 p-3 rounded-lg border bg-background" onClick={() => setSelectedWalletId(wallet.id)}>
+                                    <input type="radio" name="wallet" value={wallet.id} checked={selectedWalletId === wallet.id} readOnly className="h-5 w-5 text-destructive border-muted-foreground focus:ring-destructive" />
                                     <Image src={wallet.logo} alt={wallet.network} width={40} height={40} data-ai-hint={wallet.logoHint} className="w-10 h-10 object-contain" />
                                     <div className="flex-grow">
                                         <p className="font-semibold">{wallet.name}</p>
@@ -249,9 +305,9 @@ function CheckoutComponent() {
             </main>
 
             <div className="fixed bottom-0 left-0 right-0 p-4">
-                <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14" onClick={handlePay} disabled={isProcessing}>
+                <Button size="lg" className="w-full max-w-md mx-auto rounded-full bg-red-600 hover:bg-red-700 text-white text-lg h-14" onClick={handlePay} disabled={isProcessing || finalTotal <= 0}>
                     {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isProcessing ? 'Processing...' : `Pay & Confirm ${isFood ? 'Order' : 'Reservation'}`}
+                    {isProcessing ? processingMessage : `Pay & Confirm ${isFood ? 'Order' : 'Reservation'}`}
                 </Button>
             </div>
 
