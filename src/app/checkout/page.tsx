@@ -1,20 +1,22 @@
 
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useCart } from '@/hooks/use-cart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, Receipt, Loader2 } from 'lucide-react';
+import { ChevronLeft, Receipt, Loader2, Wallet, PlusCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, runTransaction, increment } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, runTransaction, increment, onSnapshot, query } from 'firebase/firestore';
 import { useReservation } from '@/hooks/use-reservation';
 import { payWithPaystack } from '@/lib/paystack';
+import type { wallet as WalletType } from '@/lib/types';
+import Link from 'next/link';
 
 const MopedIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -50,6 +52,8 @@ function CheckoutComponent() {
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [wallets, setWallets] = useState<WalletType[]>([]);
+    const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
 
     const isFood = checkoutType === 'food';
     
@@ -61,6 +65,24 @@ function CheckoutComponent() {
     const eLevy = 0.0;
     const finalTotal = total + fee + eLevy;
     
+    useEffect(() => {
+        if (user) {
+          const walletsQuery = query(collection(db, 'users', user.uid, 'wallets'));
+          const unsubscribe = onSnapshot(walletsQuery, (querySnapshot) => {
+            const userWallets: WalletType[] = [];
+            querySnapshot.forEach((doc) => {
+              userWallets.push({ id: doc.id, ...doc.data() } as WalletType);
+            });
+            setWallets(userWallets);
+            if (userWallets.length > 0 && !selectedWallet) {
+                setSelectedWallet(userWallets[0].id);
+            }
+          });
+    
+          return () => unsubscribe();
+        }
+      }, [user, selectedWallet]);
+
     const handleSuccessfulPayment = async () => {
         if (!user) return;
         
@@ -118,20 +140,31 @@ function CheckoutComponent() {
         }
     }
 
-    const handlePay = () => {
+    const handlePay = async () => {
          if (!user?.email) {
             toast({ variant: 'destructive', title: 'Error', description: 'User email not found.' });
             return;
         }
 
-        payWithPaystack({
-            email: user.email,
-            amount: finalTotal * 100, // Paystack amount is in kobo
-            onSuccess: handleSuccessfulPayment,
-            onClose: () => {
-                toast({ variant: 'default', title: 'Payment Cancelled', description: 'Your payment was not completed.' });
+        setIsProcessing(true);
+        try {
+            const { authorization_url } = await payWithPaystack({
+                email: user.email,
+                amount: finalTotal, // Paystack amount is in GHC
+            });
+
+            if (authorization_url) {
+                // Redirect to Paystack's payment page
+                router.push(authorization_url);
+            } else {
+                 toast({ variant: 'destructive', title: 'Payment Error', description: 'Could not initialize payment.' });
+                 setIsProcessing(false);
             }
-        });
+
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Payment Error', description: error.message });
+             setIsProcessing(false);
+        }
     };
 
     const handleModalAction = () => {
@@ -186,6 +219,30 @@ function CheckoutComponent() {
                         <div className="flex justify-between items-center">
                             <span className="text-muted-foreground text-sm">You will be charged</span>
                             <span className="font-bold text-xl">₵{finalTotal.toFixed(2)}</span>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                 <Card className="rounded-2xl shadow-lg">
+                    <CardContent className="p-4">
+                        <h3 className="font-bold mb-4 flex items-center gap-2"><Wallet className="w-5 h-5 text-muted-foreground" /> Mobile Money</h3>
+                        <div className="space-y-3">
+                           {wallets.map(wallet => (
+                                <div key={wallet.id} className="flex items-center gap-4 p-3 rounded-lg border bg-background" onClick={() => setSelectedWallet(wallet.id)}>
+                                    <input type="radio" name="wallet" value={wallet.id} checked={selectedWallet === wallet.id} readOnly className="h-5 w-5 text-destructive border-muted-foreground focus:ring-destructive" />
+                                    <Image src={wallet.logo} alt={wallet.network} width={40} height={40} data-ai-hint={wallet.logoHint} className="w-10 h-10 object-contain" />
+                                    <div className="flex-grow">
+                                        <p className="font-semibold">{wallet.name}</p>
+                                        <p className="text-sm text-muted-foreground">{wallet.number}</p>
+                                    </div>
+                                </div>
+                           ))}
+                           <Link href="/settings/payment-methods/add" passHref>
+                                <button className="mt-2 w-full flex items-center justify-center gap-2 p-3 text-center text-primary font-semibold border-2 border-dashed border-primary/50 rounded-lg hover:bg-primary/5 transition-colors">
+                                    <PlusCircle className="w-5 h-5" />
+                                    <span>Add new wallet</span>
+                                </button>
+                            </Link>
                         </div>
                     </CardContent>
                 </Card>
