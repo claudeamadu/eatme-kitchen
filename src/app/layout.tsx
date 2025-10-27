@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { OnboardingProvider } from '@/hooks/use-onboarding';
 import { AppLayout } from '@/components/layout/app-layout';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'EatMe - Your Culinary Companion',
@@ -36,6 +37,7 @@ export default function RootLayout({
             </AppLayout>
           <Toaster />
         </OnboardingProvider>
+        <Script src="https://js.paystack.co/v2/inline.js" />
       </body>
     </html>
   );
