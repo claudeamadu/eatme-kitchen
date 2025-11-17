@@ -6,7 +6,7 @@ interface PaystackChargeOptions {
     amount: number; // in GHC
     mobile_money: {
         phone: string;
-        provider: 'mtn' | 'vod' | 'tgo';
+        provider: 'mtn' | 'vod' | 'atl' | any;
     };
 }
 

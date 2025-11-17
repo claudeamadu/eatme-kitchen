@@ -188,7 +188,7 @@ function CheckoutComponent() {
             const networkMap = {
                 'mtn': 'mtn',
                 'vodafone': 'vod',
-                'airteltigo': 'tgo'
+                'airteltigo': 'atl'
             } as const;
 
             const provider = networkMap[selectedWallet.network as keyof typeof networkMap];

@@ -70,7 +70,7 @@ export default function HomePage() {
       <header className="container mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-2">
           <div>
-          <h1 className="text-3xl font-headline font-bold">{greeting} {displayName}</h1>
+          <h1 className="text-xs font-headline font-bold">{greeting} {displayName}</h1>
           <p className="text-muted-foreground">We hope you're in a good mood to dine.</p>
           </div>
           <div className="flex items-center gap-2">
@@ -101,7 +101,7 @@ export default function HomePage() {
         </Carousel>
       </section>
       
-      <section className="container mx-auto px-4 mb-8">
+      {/*<section className="container mx-auto px-4 mb-8">
         <Card className="p-4 flex items-center justify-between gap-4 bg-card shadow-lg rounded-2xl">
           <div className="flex-1">
             <h3 className="font-bold font-headline text-lg">Celebrating a special occasion or event?</h3>
@@ -111,7 +111,7 @@ export default function HomePage() {
           </div>
           <Image src="/assets/d136b40050182efd17664f91a0bcd355.png" alt="Reservation" width={80} height={80} data-ai-hint="waiter serving food" className="w-20 h-20" />
         </Card>
-      </section>
+      </section>*/}
       
       <main className="container mx-auto px-4 pb-24">
         <div className="flex justify-between items-center mb-4">
