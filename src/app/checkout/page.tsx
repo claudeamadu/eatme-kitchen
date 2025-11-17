@@ -209,7 +209,7 @@ function CheckoutComponent() {
                     provider: provider
                 }
             });
-            console.log(chargeResponse)
+            //console.log(chargeResponse)
             if (chargeResponse.status && chargeResponse.reference) {
                 setProcessingMessage(chargeResponse.message || 'Awaiting confirmation on your phone...');
                 // Start polling for verification
