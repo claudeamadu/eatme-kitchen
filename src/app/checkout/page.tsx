@@ -17,6 +17,7 @@ import { useReservation } from '@/hooks/use-reservation';
 import { chargeWithPaystack, verifyPaystackTransaction } from '@/lib/paystack';
 import type { wallet as WalletType } from '@/lib/types';
 import Link from 'next/link';
+import { sms } from '@/lib/sms';
 
 const MopedIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -49,7 +50,7 @@ function CheckoutComponent() {
     const reservationHook = useReservation();
     const { user } = useOnboarding();
     const { toast } = useToast();
-    
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [processingMessage, setProcessingMessage] = useState('Processing...');
@@ -57,36 +58,36 @@ function CheckoutComponent() {
     const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
 
     const isFood = checkoutType === 'food';
-    
-    const { total, items } = isFood 
-        ? { total: cart.total, items: cart.items } 
+
+    const { total, items } = isFood
+        ? { total: cart.total, items: cart.items }
         : { total: reservationHook.getReservationTotal().total, items: [] };
-    
+
     const fee = 0.0;
     const eLevy = 0.0;
     const finalTotal = total + fee + eLevy;
-    
+
     useEffect(() => {
         if (user) {
-          const walletsQuery = query(collection(db, 'users', user.uid, 'wallets'));
-          const unsubscribe = onSnapshot(walletsQuery, (querySnapshot) => {
-            const userWallets: WalletType[] = [];
-            querySnapshot.forEach((doc) => {
-              userWallets.push({ id: doc.id, ...doc.data() } as WalletType);
+            const walletsQuery = query(collection(db, 'users', user.uid, 'wallets'));
+            const unsubscribe = onSnapshot(walletsQuery, (querySnapshot) => {
+                const userWallets: WalletType[] = [];
+                querySnapshot.forEach((doc) => {
+                    userWallets.push({ id: doc.id, ...doc.data() } as WalletType);
+                });
+                setWallets(userWallets);
+                if (userWallets.length > 0 && !selectedWalletId) {
+                    setSelectedWalletId(userWallets[0].id);
+                }
             });
-            setWallets(userWallets);
-            if (userWallets.length > 0 && !selectedWalletId) {
-                setSelectedWalletId(userWallets[0].id);
-            }
-          });
-    
-          return () => unsubscribe();
+
+            return () => unsubscribe();
         }
-      }, [user, selectedWalletId]);
+    }, [user, selectedWalletId]);
 
     const handleSuccessfulPayment = async () => {
         if (!user) return;
-        
+
         try {
             if (isFood) {
                 if (items.length === 0) {
@@ -113,17 +114,17 @@ function CheckoutComponent() {
                     });
 
                     const pointsEarned = Math.floor(finalTotal / 10);
-                    transaction.set(loyaltyRef, { 
+                    transaction.set(loyaltyRef, {
                         points: increment(pointsEarned - cart.appliedPoints),
-                        orders: increment(1) 
+                        orders: increment(1)
                     }, { merge: true });
                 });
             } else {
-                 const { reservation } = reservationHook;
-                 const bookingDate = `${reservation.day} ${months.find(m => m.value === reservation.month)?.label || ''}, ${reservation.year}`;
-                 const bookingTime = `${reservation.hour}:${reservation.minute} ${reservation.period}`;
+                const { reservation } = reservationHook;
+                const bookingDate = `${reservation.day} ${months.find(m => m.value === reservation.month)?.label || ''}, ${reservation.year}`;
+                const bookingTime = `${reservation.hour}:${reservation.minute} ${reservation.period}`;
 
-                 await addDoc(collection(db, 'reservations'), {
+                await addDoc(collection(db, 'reservations'), {
                     uid: user.uid,
                     name: reservation.name, phone: reservation.phone, date: bookingDate, time: bookingTime,
                     guests: reservation.guests, duration: reservation.duration, occasion: reservation.occasion,
@@ -152,6 +153,7 @@ function CheckoutComponent() {
             if (result.status === 'success') {
                 clearInterval(interval);
                 setProcessingMessage('Payment successful! Finishing up...');
+                sms.send(sms.ADMIN_PHONE,'Payment recieved! Check Dashboard for more details')
                 await handleSuccessfulPayment();
                 setIsProcessing(false);
             } else if (result.status === 'failed') {
@@ -177,7 +179,7 @@ function CheckoutComponent() {
 
         const selectedWallet = wallets.find(w => w.id === selectedWalletId);
         if (!selectedWallet) {
-             toast({ variant: 'destructive', title: 'Error', description: 'Selected wallet not found.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Selected wallet not found.' });
             return;
         }
 
@@ -192,13 +194,13 @@ function CheckoutComponent() {
             } as const;
 
             const provider = networkMap[selectedWallet.network as keyof typeof networkMap];
-            
+
             if (!provider) {
                 toast({ variant: 'destructive', title: 'Unsupported Network', description: 'This mobile money provider is not supported.' });
                 setIsProcessing(false);
                 return;
             }
-            
+
             const chargeResponse = await chargeWithPaystack({
                 email: user.email,
                 amount: finalTotal,
@@ -207,19 +209,19 @@ function CheckoutComponent() {
                     provider: provider
                 }
             });
-
+            console.log(chargeResponse)
             if (chargeResponse.status && chargeResponse.reference) {
                 setProcessingMessage(chargeResponse.message || 'Awaiting confirmation on your phone...');
                 // Start polling for verification
                 pollTransactionStatus(chargeResponse.reference);
             } else {
-                 toast({ variant: 'destructive', title: 'Payment Error', description: chargeResponse.message });
-                 setIsProcessing(false);
+                toast({ variant: 'destructive', title: 'Payment Error', description: chargeResponse.message });
+                setIsProcessing(false);
             }
 
         } catch (error: any) {
-             toast({ variant: 'destructive', title: 'Payment Error', description: error.message });
-             setIsProcessing(false);
+            toast({ variant: 'destructive', title: 'Payment Error', description: error.message });
+            setIsProcessing(false);
         }
     };
 
@@ -232,9 +234,9 @@ function CheckoutComponent() {
             router.push('/');
         }
     }
-    
+
     const getModalTitle = () => isFood ? 'Order Confirmed' : 'Reservation Confirmed';
-    const getModalDescription = () => isFood 
+    const getModalDescription = () => isFood
         ? "Your order is confirmed! You'll receive updates as it progresses. Track the status anytime on the Orders page."
         : "Your table has been booked. We're excited to have you! You can view your reservation details on the homepage.";
     const getModalActionText = () => isFood ? 'Track Order' : 'Done';
@@ -279,11 +281,11 @@ function CheckoutComponent() {
                     </CardContent>
                 </Card>
 
-                 <Card className="rounded-2xl shadow-lg">
+                <Card className="rounded-2xl shadow-lg">
                     <CardContent className="p-4">
                         <h3 className="font-bold mb-4 flex items-center gap-2"><Wallet className="w-5 h-5 text-muted-foreground" /> Mobile Money</h3>
                         <div className="space-y-3">
-                           {wallets.map(wallet => (
+                            {wallets.map(wallet => (
                                 <div key={wallet.id} className="flex items-center gap-4 p-3 rounded-lg border bg-background" onClick={() => setSelectedWalletId(wallet.id)}>
                                     <input type="radio" name="wallet" value={wallet.id} checked={selectedWalletId === wallet.id} readOnly className="h-5 w-5 text-destructive border-muted-foreground focus:ring-destructive" />
                                     <Image src={wallet.logo} alt={wallet.network} width={40} height={40} data-ai-hint={wallet.logoHint} className="w-10 h-10 object-contain" />
@@ -292,8 +294,8 @@ function CheckoutComponent() {
                                         <p className="text-sm text-muted-foreground">{wallet.number}</p>
                                     </div>
                                 </div>
-                           ))}
-                           <Link href="/settings/payment-methods/add" passHref>
+                            ))}
+                            <Link href="/settings/payment-methods/add" passHref>
                                 <button className="mt-2 w-full flex items-center justify-center gap-2 p-3 text-center text-primary font-semibold border-2 border-dashed border-primary/50 rounded-lg hover:bg-primary/5 transition-colors">
                                     <PlusCircle className="w-5 h-5" />
                                     <span>Add new wallet</span>
@@ -313,11 +315,11 @@ function CheckoutComponent() {
 
             <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <AlertDialogContent className="max-w-xs rounded-2xl">
-                     <AlertDialogHeader className="items-center text-center">
+                    <AlertDialogHeader className="items-center text-center">
                         <Image src={getModalImage()} width={150} height={100} alt={getModalTitle()} data-ai-hint={getModalImageHint()} />
                         <AlertDialogTitle className="text-2xl font-bold font-headline">{getModalTitle()}</AlertDialogTitle>
                         <AlertDialogDescription>
-                           {getModalDescription()}
+                            {getModalDescription()}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -331,7 +333,7 @@ function CheckoutComponent() {
 
 export default function CheckoutPage() {
     return (
-        <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin"/></div>}>
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
             <CheckoutComponent />
         </Suspense>
     )
